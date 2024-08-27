@@ -76,81 +76,59 @@
             flex-wrap: wrap;
             gap: 10px;
         }
+        .tabs {
+            display: flex;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: #f4f4f4;
+            border: 1px solid #ccc;
+            border-bottom: none;
+        }
+        .tab.active {
+            background: #fff;
+            border-bottom: 1px solid #fff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
     </style>
     <script>
-        async function fetchMessages() {
-            const response = await fetch('/messages');
-            const messages = await response.json();
-            const messageList = document.getElementById('message-list');
-            messageList.innerHTML = '';
-            messages.forEach(message => {
-                const li = document.createElement('li');
-                li.textContent = `ID: ${message.id}, Message ID: ${message.message_id}, Type: ${message.message_type}, Key: ${message.key}, Data Type: ${message.data_type}, Min: ${message.min}, Max: ${message.max}, Value: ${message.value}`;
-                messageList.appendChild(li);
-            });
-        }
+        function switchTab(event, tabId) {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
 
-        async function fetchDataTypes() {
-            const response = await fetch('/data_types');
-            const dataTypes = await response.json();
-            const dataTypeSelect = document.getElementById('data_type');
-            dataTypeSelect.innerHTML = '';
-            dataTypes.forEach(type => {
-                const option = document.createElement('option');
-                option.value = type;
-                option.textContent = type;
-                dataTypeSelect.appendChild(option);
-            });
-            const newOption = document.createElement('option');
-            newOption.value = 'new';
-            newOption.textContent = '新增';
-            dataTypeSelect.appendChild(newOption);
-        }
+            tabs.forEach(tab => tab.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
 
-        function handleDataTypeChange() {
-            const dataType = document.getElementById('data_type').value;
-            if (dataType === 'new') {
-                const newDataType = prompt('请输入新的数据类型:');
-                if (newDataType) {
-                    addDataType(newDataType);
-                }
-            }
-        }
-
-        async function addDataType(newDataType) {
-            const response = await fetch('/data_type', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ data_type: newDataType })
-            });
-            if (response.ok) {
-                fetchDataTypes();
-            }
+            event.currentTarget.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
         }
 
         function handleValueTypeChange() {
             const valueType = document.getElementById('value_type').value;
-            const minInput = document.getElementById('min');
-            const maxInput = document.getElementById('max');
-            const valueInput = document.getElementById('value');
+            const minField = document.getElementById('min_field');
+            const maxField = document.getElementById('max_field');
+            const valueField = document.getElementById('value_field');
 
             if (valueType === 'range') {
-                minInput.parentElement.style.display = 'block';
-                maxInput.parentElement.style.display = 'block';
-                valueInput.parentElement.style.display = 'none';
+                minField.style.display = 'block';
+                maxField.style.display = 'block';
+                valueField.style.display = 'none';
             } else {
-                minInput.parentElement.style.display = 'none';
-                maxInput.parentElement.style.display = 'none';
-                valueInput.parentElement.style.display = 'block';
+                minField.style.display = 'none';
+                maxField.style.display = 'none';
+                valueField.style.display = 'block';
             }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            fetchMessages();
-            fetchDataTypes();
-            document.getElementById('data_type').addEventListener('change', handleDataTypeChange);
+            document.getElementById('default-tab').click();
             document.getElementById('value_type').addEventListener('change', handleValueTypeChange);
             handleValueTypeChange(); // 初始化时调用一次
         });
@@ -163,52 +141,99 @@
         </div>
     </header>
     <div class="container main">
-        <h1>Messages</h1>
-        <ul id="message-list"></ul>
-        <h2>Add New Message</h2>
-        <form id="message-form">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="message_id">Message ID</label>
-                    <input type="text" id="message_id" name="message_id" required>
+        <div class="tabs">
+            <div class="tab" id="default-tab" onclick="switchTab(event, 'simple-message-tab')">简单消息类型</div>
+            <div class="tab" onclick="switchTab(event, 'complex-message-tab')">复杂消息类型</div>
+        </div>
+        <div id="simple-message-tab" class="tab-content">
+            <h1>Messages</h1>
+            <ul id="message-list"></ul>
+            <h2>Add New Message</h2>
+            <form id="message-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="message_id">Message ID</label>
+                        <input type="text" id="message_id" name="message_id" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="message_type">Message Type</label>
+                        <select id="message_type" name="message_type" required>
+                            <option value="simple">简单类型</option>
+                            <option value="complex">复杂类型</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="key">Key</label>
+                        <input type="text" id="key" name="key" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="data_type">Data Type</label>
+                        <select id="data_type" name="data_type" required>
+                            <option value="int">int</option>
+                            <option value="float">float</option>
+                            <option value="string">string</option>
+                            <option value="bool">bool</option>
+                            <option value="char">char</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="value_type">Value Type</label>
+                        <select id="value_type" name="value_type" required>
+                            <option value="range">Range</option>
+                            <option value="fix">Fix</option>
+                            <option value="default">Default</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="min_field">
+                        <label for="min">Min</label>
+                        <input type="text" id="min" name="min">
+                    </div>
+                    <div class="form-group" id="max_field">
+                        <label for="max">Max</label>
+                        <input type="text" id="max" name="max">
+                    </div>
+                    <div class="form-group" id="value_field">
+                        <label for="value">Value</label>
+                        <input type="text" id="value" name="value">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="message_type">Message Type</label>
-                    <input type="text" id="message_type" name="message_type" required>
+                    <button type="submit">Add Message</button>
+                </div>
+            </form>
+        </div>
+        <div id="complex-message-tab" class="tab-content">
+            <h2>Add Complex Message</h2>
+            <form id="complex-message-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="complex_message_id">Message ID</label>
+                        <input type="text" id="complex_message_id" name="complex_message_id" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="complex_message_type">Message Type</label>
+                        <select id="complex_message_type" name="complex_message_type" required>
+                            <option value="complex">复杂类型</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="complex_data_type">Data Type</label>
+                        <select id="complex_data_type" name="complex_data_type" required>
+                            <option value="type1">type1</option>
+                            <option value="type2">type2</option>
+                            <option value="type3">type3</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="count">Count</label>
+                        <input type="number" id="count" name="count" required>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="key">Key</label>
-                    <input type="text" id="key" name="key" required>
+                    <button type="submit">Add Complex Message</button>
                 </div>
-                <div class="form-group">
-                    <label for="data_type">Data Type</label>
-                    <select id="data_type" name="data_type" required></select>
-                </div>
-                <div class="form-group">
-                    <label for="value_type">Value Type</label>
-                    <select id="value_type" name="value_type" required>
-                        <option value="range">Range</option>
-                        <option value="fix">Fix</option>
-                        <option value="default">Default</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="min">Min</label>
-                    <input type="number" id="min" name="min">
-                </div>
-                <div class="form-group">
-                    <label for="max">Max</label>
-                    <input type="number" id="max" name="max">
-                </div>
-                <div class="form-group">
-                    <label for="value">Value</label>
-                    <input type="number" id="value" name="value">
-                </div>
-            </div>
-            <div class="form-group">
-                <button type="submit">Add Message</button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </body>
 </html>
