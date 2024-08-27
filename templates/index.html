@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+        }
+        header {
+            background: #333;
+            color: #fff;
+            padding-top: 30px;
+            min-height: 70px;
+            border-bottom: #77aaff 3px solid;
+        }
+        header a {
+            color: #fff;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 16px;
+        }
+        header ul {
+            padding: 0;
+            list-style: none;
+        }
+        .main {
+            padding: 20px;
+            background: #fff;
+            margin-top: 20px;
+        }
+        .main h1 {
+            text-align: center;
+        }
+        .main ul {
+            list-style: none;
+            padding: 0;
+        }
+        .main li {
+            background: #f4f4f4;
+            margin: 5px 0;
+            padding: 10px;
+            border: #ccc 1px solid;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        .form-group label {
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group select {
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .form-group button {
+            padding: 10px 15px;
+            background: #333;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+    </style>
+    <script>
+        async function fetchMessages() {
+            const response = await fetch('/messages');
+            const messages = await response.json();
+            const messageList = document.getElementById('message-list');
+            messageList.innerHTML = '';
+            messages.forEach(message => {
+                const li = document.createElement('li');
+                li.textContent = `ID: ${message.id}, Message ID: ${message.message_id}, Type: ${message.message_type}, Key: ${message.key}, Data Type: ${message.data_type}, Min: ${message.min}, Max: ${message.max}, Value: ${message.value}`;
+                messageList.appendChild(li);
+            });
+        }
+
+        async function fetchDataTypes() {
+            const response = await fetch('/data_types');
+            const dataTypes = await response.json();
+            const dataTypeSelect = document.getElementById('data_type');
+            dataTypeSelect.innerHTML = '';
+            dataTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                dataTypeSelect.appendChild(option);
+            });
+            const newOption = document.createElement('option');
+            newOption.value = 'new';
+            newOption.textContent = '新增';
+            dataTypeSelect.appendChild(newOption);
+        }
+
+        function handleDataTypeChange() {
+            const dataType = document.getElementById('data_type').value;
+            if (dataType === 'new') {
+                const newDataType = prompt('请输入新的数据类型:');
+                if (newDataType) {
+                    addDataType(newDataType);
+                }
+            }
+        }
+
+        async function addDataType(newDataType) {
+            const response = await fetch('/data_type', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ data_type: newDataType })
+            });
+            if (response.ok) {
+                fetchDataTypes();
+            }
+        }
+
+        function handleValueTypeChange() {
+            const valueType = document.getElementById('value_type').value;
+            const minInput = document.getElementById('min');
+            const maxInput = document.getElementById('max');
+            const valueInput = document.getElementById('value');
+
+            if (valueType === 'range') {
+                minInput.parentElement.style.display = 'block';
+                maxInput.parentElement.style.display = 'block';
+                valueInput.parentElement.style.display = 'none';
+            } else {
+                minInput.parentElement.style.display = 'none';
+                maxInput.parentElement.style.display = 'none';
+                valueInput.parentElement.style.display = 'block';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchMessages();
+            fetchDataTypes();
+            document.getElementById('data_type').addEventListener('change', handleDataTypeChange);
+            document.getElementById('value_type').addEventListener('change', handleValueTypeChange);
+            handleValueTypeChange(); // 初始化时调用一次
+        });
+    </script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Message Management</h1>
+        </div>
+    </header>
+    <div class="container main">
+        <h1>Messages</h1>
+        <ul id="message-list"></ul>
+        <h2>Add New Message</h2>
+        <form id="message-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="message_id">Message ID</label>
+                    <input type="text" id="message_id" name="message_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="message_type">Message Type</label>
+                    <input type="text" id="message_type" name="message_type" required>
+                </div>
+                <div class="form-group">
+                    <label for="key">Key</label>
+                    <input type="text" id="key" name="key" required>
+                </div>
+                <div class="form-group">
+                    <label for="data_type">Data Type</label>
+                    <select id="data_type" name="data_type" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="value_type">Value Type</label>
+                    <select id="value_type" name="value_type" required>
+                        <option value="range">Range</option>
+                        <option value="fix">Fix</option>
+                        <option value="default">Default</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="min">Min</label>
+                    <input type="number" id="min" name="min">
+                </div>
+                <div class="form-group">
+                    <label for="max">Max</label>
+                    <input type="number" id="max" name="max">
+                </div>
+                <div class="form-group">
+                    <label for="value">Value</label>
+                    <input type="number" id="value" name="value">
+                </div>
+            </div>
+            <div class="form-group">
+                <button type="submit">Add Message</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
