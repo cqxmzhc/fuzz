@@ -189,7 +189,14 @@
             });
         }
 
-        function addMessageBody() {
+        function addComplexMessageBody() {
+            const messageBodyTemplate = document.getElementById('message-body-template');
+            const newMessageBody = messageBodyTemplate.content.cloneNode(true);
+            document.getElementById('complex-message-bodies').appendChild(newMessageBody);
+            newMessageBody.querySelector('.value-type').addEventListener('change', handleValueTypeChange);
+        }
+
+        function addSimpleMessageBody() {
             const messageBodyTemplate = document.getElementById('message-body-template');
             const newMessageBody = messageBodyTemplate.content.cloneNode(true);
             document.getElementById('message-bodies').appendChild(newMessageBody);
@@ -261,7 +268,6 @@
                         <label for="message_type">Message Type</label>
                         <select id="message_type" name="message_type" required>
                             <option value="simple">简单类型</option>
-                            <option value="complex">复杂类型</option>
                         </select>
                     </div>
                 </div>
@@ -305,42 +311,74 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <button type="button" onclick="addMessageBody()">Add Message Body</button>
+                    <button type="button" onclick="addSimpleMessageBody()">Add Message Body</button>
                 </div>
                 <div class="form-group">
                     <button type="submit">Add Message</button>
                 </div>
             </form>
         </div>
+        
         <div id="complex-message-tab" class="tab-content">
-            <h2>Add Complex Message</h2>
-            <form id="complex-message-form">
+            <h1>Messages</h1>
+            <h2>Add New Message</h2>
+            <form id="message-form" onsubmit="addMessage(event)">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="complex_message_id">Message ID</label>
-                        <input type="text" id="complex_message_id" name="complex_message_id" required>
+                        <label for="message_id">Message ID</label>
+                        <input type="text" id="message_id" name="message_id" required>
                     </div>
                     <div class="form-group">
-                        <label for="complex_message_type">Message Type</label>
-                        <select id="complex_message_type" name="complex_message_type" required>
-                            <option value="complex">复杂类型</option>
+                        <label for="message_type">Message Type</label>
+                        <select id="message_type" name="message_type" required>
+                            <option value="simple">复杂类型</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="complex_data_type">Data Type</label>
-                        <select id="complex_data_type" name="complex_data_type" required>
-                            <option value="type1">type1</option>
-                            <option value="type2">type2</option>
-                            <option value="type3">type3</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="count">Count</label>
-                        <input type="number" id="count" name="count" required>
+                </div>
+                <div id="complex-message-bodies">
+                    <div class="message-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="key">Key</label>
+                                <input type="text" name="key" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="data_type">Data Type</label>
+                                <select name="data_type" required>
+                                    <option value="int">int</option>
+                                    <option value="float">float</option>
+                                    <option value="string">string</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="value_type">Value Type</label>
+                                <select name="value_type" class="value-type" required>
+                                    <option value="range">Range</option>
+                                    <option value="fix">Fix</option>
+                                    <option value="default">Default</option>
+                                    <option value="new">新建...</option>
+                                </select>
+                            </div>
+                            <div class="form-group min-field">
+                                <label for="min">Min</label>
+                                <input type="number" name="min">
+                            </div>
+                            <div class="form-group max-field">
+                                <label for="max">Max</label>
+                                <input type="number" name="max">
+                            </div>
+                            <div class="form-group value-field">
+                                <label for="value">Value</label>
+                                <input type="number" name="value">
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group">
-                    <button type="submit">Add Complex Message</button>
+                    <button type="button" onclick="addComplexMessageBody()">Add Message Body</button>
+                </div>
+                <div class="form-group">
+                    <button type="submit">Add Message</button>
                 </div>
             </form>
         </div>
