@@ -89,15 +89,20 @@ def get_data_types():
     conn.close()
     return jsonify([row['data_type'] for row in data_types])
 
+
 @app.route('/data_type', methods=['POST'])
 def add_data_type():
     new_data_type = request.get_json()['data_type']
     conn = get_db_connection()
-    conn.execute('''
-        INSERT INTO data_types (data_type)
-        VALUES (?)
-    ''', (new_data_type,))
-    conn.commit()
+    try:
+        conn.execute('''
+            INSERT INTO data_types (data_type)
+            VALUES (?)
+        ''', (new_data_type,))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.close()
+        return jsonify({'error': 'Data type already exists'}), 400
     conn.close()
     return '', 201
 

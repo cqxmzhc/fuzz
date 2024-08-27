@@ -115,16 +115,22 @@
             document.getElementById(tabId).classList.add('active');
         }
 
-        function handleValueTypeChange() {
-            const valueType = document.getElementById('value_type').value;
-            const minField = document.getElementById('min_field');
-            const maxField = document.getElementById('max_field');
-            const valueField = document.getElementById('value_field');
+        function handleValueTypeChange(event) {
+            const valueType = event.target.value;
+            const minField = event.target.closest('.message-body').querySelector('.min-field');
+            const maxField = event.target.closest('.message-body').querySelector('.max-field');
+            const valueField = event.target.closest('.message-body').querySelector('.value-field');
 
             if (valueType === 'range') {
                 minField.style.display = 'block';
                 maxField.style.display = 'block';
                 valueField.style.display = 'none';
+            } else if (valueType === 'fix') {
+                minField.style.display = 'none';
+                maxField.style.display = 'none';
+                valueField.style.display = 'block';
+            } else if (valueType === 'new') {
+                addValueType();
             } else {
                 minField.style.display = 'none';
                 maxField.style.display = 'none';
@@ -178,7 +184,7 @@
                 listItem.textContent = JSON.stringify(message);
                 messageList.appendChild(listItem);
                 event.target.reset();
-                handleValueTypeChange(); // 重置表单时调用一次
+                document.querySelectorAll('.value-type').forEach(select => handleValueTypeChange({ target: select })); // 重置表单时调用一次
             });
         }
 
@@ -186,12 +192,38 @@
             const messageBodyTemplate = document.getElementById('message-body-template');
             const newMessageBody = messageBodyTemplate.content.cloneNode(true);
             document.getElementById('message-bodies').appendChild(newMessageBody);
+            newMessageBody.querySelector('.value-type').addEventListener('change', handleValueTypeChange);
+        }
+
+        function addValueType() {
+            const newValueType = prompt('请输入新的Value Type:');
+            if (newValueType) {
+                fetch('/data_type', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ data_type: newValueType })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        const valueTypeSelects = document.querySelectorAll('.value-type');
+                        valueTypeSelects.forEach(select => {
+                            const option = document.createElement('option');
+                            option.value = newValueType;
+                            option.textContent = newValueType;
+                            select.insertBefore(option, select.querySelector('option[value="new"]'));
+                        });
+                    } else {
+                        alert('Failed to add new value type');
+                    }
+                });
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('default-tab').click();
-            document.getElementById('value_type').addEventListener('change', handleValueTypeChange);
-            handleValueTypeChange(); // 初始化时调用一次
+            document.querySelectorAll('.value-type').forEach(select => select.addEventListener('change', handleValueTypeChange));
             fetchMessages(); // 初始化时获取消息列表
         });
     </script>
@@ -242,21 +274,22 @@
                             </div>
                             <div class="form-group">
                                 <label for="value_type">Value Type</label>
-                                <select name="value_type" required>
+                                <select name="value_type" class="value-type" required>
                                     <option value="range">Range</option>
                                     <option value="fix">Fix</option>
                                     <option value="default">Default</option>
+                                    <option value="new">新建...</option>
                                 </select>
                             </div>
-                            <div class="form-group" id="min_field">
+                            <div class="form-group min-field">
                                 <label for="min">Min</label>
                                 <input type="number" name="min">
                             </div>
-                            <div class="form-group" id="max_field">
+                            <div class="form-group max-field">
                                 <label for="max">Max</label>
                                 <input type="number" name="max">
                             </div>
-                            <div class="form-group" id="value_field">
+                            <div class="form-group value-field">
                                 <label for="value">Value</label>
                                 <input type="number" name="value">
                             </div>
@@ -327,21 +360,22 @@
                 </div>
                 <div class="form-group">
                     <label for="value_type">Value Type</label>
-                    <select name="value_type" required>
+                    <select name="value_type" class="value-type" required>
                         <option value="range">Range</option>
                         <option value="fix">Fix</option>
                         <option value="default">Default</option>
+                        <option value="new">新建...</option>
                     </select>
                 </div>
-                <div class="form-group" id="min_field">
+                <div class="form-group min-field">
                     <label for="min">Min</label>
                     <input type="number" name="min">
                 </div>
-                <div class="form-group" id="max_field">
+                <div class="form-group max-field">
                     <label for="max">Max</label>
                     <input type="number" name="max">
                 </div>
-                <div class="form-group" id="value_field">
+                <div class="form-group value-field">
                     <label for="value">Value</label>
                     <input type="number" name="value">
                 </div>
