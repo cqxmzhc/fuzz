@@ -50,6 +50,7 @@
             margin: 5px 0;
             padding: 10px;
             border: #ccc 1px solid;
+            word-wrap: break-word; /* 自动换行 */
         }
         .form-group {
             margin-bottom: 15px;
@@ -127,10 +128,49 @@
             }
         }
 
+        function fetchMessages() {
+            fetch('/messages')
+                .then(response => response.json())
+                .then(messages => {
+                    const messageList = document.getElementById('message-list');
+                    messageList.innerHTML = '';
+                    messages.forEach(message => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = JSON.stringify(message);
+                        messageList.appendChild(listItem);
+                    });
+                });
+        }
+
+        function addMessage(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+
+            fetch('/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(message => {
+                const messageList = document.getElementById('message-list');
+                const listItem = document.createElement('li');
+                listItem.textContent = JSON.stringify(message);
+                messageList.appendChild(listItem);
+                event.target.reset();
+                handleValueTypeChange(); // 重置表单时调用一次
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('default-tab').click();
             document.getElementById('value_type').addEventListener('change', handleValueTypeChange);
+            document.getElementById('message-form').addEventListener('submit', addMessage);
             handleValueTypeChange(); // 初始化时调用一次
+            fetchMessages(); // 初始化时获取消息列表
         });
     </script>
 </head>
@@ -144,10 +184,10 @@
         <div class="tabs">
             <div class="tab" id="default-tab" onclick="switchTab(event, 'simple-message-tab')">简单消息类型</div>
             <div class="tab" onclick="switchTab(event, 'complex-message-tab')">复杂消息类型</div>
+            <div class="tab" onclick="switchTab(event, 'message-list-tab')">消息列表</div>
         </div>
         <div id="simple-message-tab" class="tab-content">
             <h1>Messages</h1>
-            <ul id="message-list"></ul>
             <h2>Add New Message</h2>
             <form id="message-form">
                 <div class="form-row">
@@ -172,8 +212,6 @@
                             <option value="int">int</option>
                             <option value="float">float</option>
                             <option value="string">string</option>
-                            <option value="bool">bool</option>
-                            <option value="char">char</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -186,15 +224,15 @@
                     </div>
                     <div class="form-group" id="min_field">
                         <label for="min">Min</label>
-                        <input type="text" id="min" name="min">
+                        <input type="number" id="min" name="min">
                     </div>
                     <div class="form-group" id="max_field">
                         <label for="max">Max</label>
-                        <input type="text" id="max" name="max">
+                        <input type="number" id="max" name="max">
                     </div>
                     <div class="form-group" id="value_field">
                         <label for="value">Value</label>
-                        <input type="text" id="value" name="value">
+                        <input type="number" id="value" name="value">
                     </div>
                 </div>
                 <div class="form-group">
@@ -233,6 +271,10 @@
                     <button type="submit">Add Complex Message</button>
                 </div>
             </form>
+        </div>
+        <div id="message-list-tab" class="tab-content">
+            <h2>Message List</h2>
+            <ul id="message-list"></ul>
         </div>
     </div>
 </body>
