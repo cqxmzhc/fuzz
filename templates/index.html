@@ -165,7 +165,8 @@
                     data_type: body.querySelector('[name="data_type"]').value,
                     min: body.querySelector('[name="min"]').value,
                     max: body.querySelector('[name="max"]').value,
-                    value: body.querySelector('[name="value"]').value
+                    value: body.querySelector('[name="value"]').value,
+                    value_type: body.querySelector('[name="value_type"]').value
                 };
                 data.message_bodies.push(bodyData);
             });
@@ -225,6 +226,13 @@
             document.getElementById('default-tab').click();
             document.querySelectorAll('.value-type').forEach(select => select.addEventListener('change', handleValueTypeChange));
             fetchMessages(); // 初始化时获取消息列表
+
+            // 初始化时处理valuetype为range的情况
+            document.querySelectorAll('.value-type').forEach(select => {
+                if (select.value === 'range') {
+                    handleValueTypeChange({ target: select });
+                }
+            });
         });
     </script>
 </head>

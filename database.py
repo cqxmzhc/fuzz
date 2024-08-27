@@ -1,5 +1,6 @@
 import sqlite3
 
+
 def init_db():
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
@@ -20,6 +21,7 @@ def init_db():
             message_id INTEGER NOT NULL,
             key TEXT NOT NULL,
             data_type TEXT NOT NULL,
+            value_type TEXT NOT NULL,
             min Real,
             max Real,
             value Real,
@@ -37,6 +39,7 @@ def init_db():
 
     conn.commit()
     conn.close()
+
 
 if __name__ == '__main__':
     init_db()

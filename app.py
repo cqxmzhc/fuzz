@@ -1,24 +1,52 @@
+from sqlite3 import Error
+from flask import jsonify
 from flask import Flask, request, jsonify, render_template
 import sqlite3
 from database import init_db  # 导入 init_db 函数
 
 app = Flask(__name__)
 
+
 def get_db_connection():
     conn = sqlite3.connect('database.db')
     conn.row_factory = sqlite3.Row
     return conn
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
+
 @app.route('/messages', methods=['GET'])
 def get_messages():
-    conn = get_db_connection()
-    messages = conn.execute('SELECT * FROM messages').fetchall()
-    conn.close()
-    return jsonify([dict(row) for row in messages])
+    try:
+        with get_db_connection() as conn:
+            # 获取所有消息
+            messages = conn.execute(
+                'SELECT id, message_id, message_type FROM messages').fetchall()
+            message_list = []
+
+            for message in messages:
+                message_id = message['id']
+                # 获取对应的消息体
+                message_bodies = conn.execute(
+                    'SELECT key, data_type, min, max, value, value_type FROM message_bodies WHERE message_id = ?', (message_id,)).fetchall()
+                bodies = [dict(body) for body in message_bodies]
+
+                # 组合消息和消息体
+                message_data = {
+                    'id': message['id'],
+                    'message_id': message['message_id'],
+                    'message_type': message['message_type'],
+                    'bodies': bodies
+                }
+                message_list.append(message_data)
+
+            return jsonify(message_list)
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/message', methods=['POST'])
 def create_message():
@@ -26,32 +54,34 @@ def create_message():
     message_id = new_message['message_id']
     message_type = new_message['message_type']
     message_bodies = new_message['message_bodies']  # 包含多个消息体的列表
-    
+
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     cursor.execute('''
         INSERT INTO messages (message_id, message_type)
         VALUES (?, ?)
     ''', (message_id, message_type))
-    
+
     message_db_id = cursor.lastrowid
-    
+
     for body in message_bodies:
         key = body['key']
         data_type = body['data_type']
         min_val = body.get('min')
         max_val = body.get('max')
         value = body.get('value')
-        
+        value_type = body.get('value_type')
+
         cursor.execute('''
-            INSERT INTO message_bodies (message_id, key, data_type, min, max, value)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (message_db_id, key, data_type, min_val, max_val, value))
-    
+            INSERT INTO message_bodies (message_id, key, data_type, min, max, value,value_type)
+            VALUES (?, ?, ?, ?, ?, ?,?)
+        ''', (message_db_id, key, data_type, min_val, max_val, value, value_type))
+
     conn.commit()
     conn.close()
     return jsonify(new_message), 201
+
 
 @app.route('/message/<int:id>', methods=['PUT'])
 def update_message(id):
@@ -63,7 +93,7 @@ def update_message(id):
     min_val = updated_message.get('min')
     max_val = updated_message.get('max')
     value = updated_message.get('value')
-    
+
     conn = get_db_connection()
     conn.execute('''
         UPDATE messages
@@ -74,6 +104,7 @@ def update_message(id):
     conn.close()
     return jsonify(updated_message)
 
+
 @app.route('/message/<int:id>', methods=['DELETE'])
 def delete_message(id):
     conn = get_db_connection()
@@ -81,6 +112,7 @@ def delete_message(id):
     conn.commit()
     conn.close()
     return '', 204
+
 
 @app.route('/data_types', methods=['GET'])
 def get_data_types():
@@ -105,6 +137,7 @@ def add_data_type():
         return jsonify({'error': 'Data type already exists'}), 400
     conn.close()
     return '', 201
+
 
 if __name__ == '__main__':
     init_db()  # 在应用启动时初始化数据库
