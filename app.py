@@ -25,17 +25,30 @@ def create_message():
     new_message = request.get_json()
     message_id = new_message['message_id']
     message_type = new_message['message_type']
-    key = new_message['key']
-    data_type = new_message['data_type']
-    min_val = new_message.get('min')
-    max_val = new_message.get('max')
-    value = new_message.get('value')
+    message_bodies = new_message['message_bodies']  # 包含多个消息体的列表
     
     conn = get_db_connection()
-    conn.execute('''
-        INSERT INTO messages (message_id, message_type, key, data_type, min, max, value)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (message_id, message_type, key, data_type, min_val, max_val, value))
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO messages (message_id, message_type)
+        VALUES (?, ?)
+    ''', (message_id, message_type))
+    
+    message_db_id = cursor.lastrowid
+    
+    for body in message_bodies:
+        key = body['key']
+        data_type = body['data_type']
+        min_val = body.get('min')
+        max_val = body.get('max')
+        value = body.get('value')
+        
+        cursor.execute('''
+            INSERT INTO message_bodies (message_id, key, data_type, min, max, value)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (message_db_id, key, data_type, min_val, max_val, value))
+    
     conn.commit()
     conn.close()
     return jsonify(new_message), 201

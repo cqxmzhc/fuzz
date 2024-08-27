@@ -9,12 +9,21 @@ def init_db():
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             message_id TEXT NOT NULL,
-            message_type TEXT NOT NULL,
+            message_type TEXT NOT NULL
+        )
+    ''')
+
+    # 创建消息体表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS message_bodies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message_id INTEGER NOT NULL,
             key TEXT NOT NULL,
             data_type TEXT NOT NULL,
             min Real,
             max Real,
-            value Real
+            value Real,
+            FOREIGN KEY (message_id) REFERENCES messages (id)
         )
     ''')
 
