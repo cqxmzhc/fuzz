@@ -125,6 +125,10 @@
 
             event.currentTarget.classList.add('active');
             document.getElementById(tabId).classList.add('active');
+
+            if (tabId === 'message-list-tab') {
+                fetchMessages();
+            }
         }
 
         function handleDataTypeChange(evnet){
@@ -243,16 +247,29 @@
                     const valueField = newMessageBody.querySelector('.value-field');
 
                     if (body.value_type === 'range') {
-                        minField.style.visibility = 'visible';
-                        maxField.style.visibility = 'visible';
-                        valueField.style.visibility = 'hidden';
+                        minField.style.display = 'block';
+                        maxField.style.display = 'block';
+                        valueField.style.display = 'none';
                         newMessageBody.querySelector('[name="min"]').value = body.min || '';
                         newMessageBody.querySelector('[name="max"]').value = body.max || '';
                     } else {
-                        minField.style.visibility = 'hidden';
-                        maxField.style.visibility = 'hidden';
-                        valueField.style.visibility = 'visible';
+                        minField.style.display = 'none';
+                        maxField.style.display = 'none';
+                        valueField.style.display = 'block';
                         newMessageBody.querySelector('[name="value"]').value = body.value || '';
+                    }
+
+                    if (body.descriptor) {
+                        body.descriptor.forEach(descriptor => {
+                            const newDropdown = document.createElement('select');
+                            newDropdown.name = 'descriptor';
+                            newDropdown.className = 'descriptor';
+                            newDropdown.required = true;
+                            newDropdown.innerHTML = `
+                                <option value="${descriptor}">${descriptor}</option>
+                            `;
+                            newMessageBody.querySelector('.form-row').appendChild(newDropdown);
+                        });
                     }
 
                     messageContainer.appendChild(newMessageBody);
@@ -490,7 +507,7 @@
                             </div>
                             <div class="form-group value-field" style="display: none;">
                                 <label for="value">Value</label>
-                                <input type="number" name="value">
+                                <input type="" name="value">
                             </div>
                         </div>
                     </div>
@@ -622,7 +639,7 @@
                 </div>
                 <div class="form-group value-field" style="display: none;">
                     <label for="value">Value</label>
-                    <input type="number" name="value">
+                    <input type="" name="value">
                 </div>
             </div>
         </div>
@@ -667,7 +684,7 @@
                 </div>
                 <div class="form-group value-field" style="display: none;">
                     <label for="value">Value</label>
-                    <input type="number" name="value">
+                    <input type="" name="value">
                 </div>
             </div>
         </div>
