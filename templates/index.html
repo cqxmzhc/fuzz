@@ -142,7 +142,7 @@
                 maxField.style.display = 'none';
                 valueField.style.display = 'block';
             } else if (valueType === 'new') {
-                addValueType();
+                addDataType();
             } else {
                 minField.style.display = 'none';
                 maxField.style.display = 'none';
@@ -173,18 +173,86 @@
             }
         }
 
+        function fetchDataTypeOptions() {
+            fetch('/data_types')
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    const dataTypeSelects = document.getElementsByName("data_type");
+        
+                    dataTypeSelects.forEach(dataTypeSelect => {
+                        dataTypeSelect.innerHTML = ''; // 清空现有选项
+        
+                        data.forEach(type => {
+                            const option = document.createElement('option');
+                            option.value = type;
+                            option.textContent = type;
+                            dataTypeSelect.appendChild(option);
+                        });
+
+                        const newOption = document.createElement('option');
+                        newOption.value = 'new';
+                        newOption.textContent = '新建';
+                        dataTypeSelect.appendChild(newOption);
+
+                // 设置默认选项
+        
+                        // 设置默认选项
+                        if (data.length > 0) {
+                            dataTypeSelect.value = data[0]; // 设置第一个选项为默认选项
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching data types:', error);
+                });
+        }
+
         function fetchMessages() {
             fetch('/messages')
-                .then(response => response.json())
-                .then(messages => {
-                    const messageList = document.getElementById('message-list');
-                    messageList.innerHTML = '';
-                    messages.forEach(message => {
-                        const listItem = document.createElement('li');
-                        listItem.textContent = JSON.stringify(message);
-                        messageList.appendChild(listItem);
-                    });
+        .then(response => response.json())
+        .then(messages => {
+            const messageList = document.getElementById('message-list');
+            messageList.innerHTML = '';
+            messages.forEach(message => {
+                const messageContainer = document.createElement('div');
+                messageContainer.classList.add('message-container');
+
+                const messageHeader = document.createElement('h3');
+                messageHeader.textContent = `Message ID: ${message.message_id}, Type: ${message.message_type}`;
+                messageContainer.appendChild(messageHeader);
+
+                message.bodies.forEach(body => {
+                    const messageBodyTemplate = document.getElementById('message-body-template');
+                    const newMessageBody = messageBodyTemplate.content.cloneNode(true);
+
+                    newMessageBody.querySelector('[name="key"]').value = body.key;
+                    newMessageBody.querySelector('[name="data_type"]').value = body.data_type;
+                    newMessageBody.querySelector('[name="value_type"]').value = body.value_type;
+
+                    const minField = newMessageBody.querySelector('.min-field');
+                    const maxField = newMessageBody.querySelector('.max-field');
+                    const valueField = newMessageBody.querySelector('.value-field');
+
+                    if (body.value_type === 'range') {
+                        minField.style.visibility = 'visible';
+                        maxField.style.visibility = 'visible';
+                        valueField.style.visibility = 'hidden';
+                        newMessageBody.querySelector('[name="min"]').value = body.min || '';
+                        newMessageBody.querySelector('[name="max"]').value = body.max || '';
+                    } else {
+                        minField.style.visibility = 'hidden';
+                        maxField.style.visibility = 'hidden';
+                        valueField.style.visibility = 'visible';
+                        newMessageBody.querySelector('[name="value"]').value = body.value || '';
+                    }
+
+                    messageContainer.appendChild(newMessageBody);
                 });
+
+                messageList.appendChild(messageContainer);
+            });
+        });
         }
 
         function addMessage(event) {
@@ -265,15 +333,15 @@
                 listItem.textContent = JSON.stringify(message);
                 messageList.appendChild(listItem);
                 event.target.reset();
-                document.querySelectorAll('.value-type').forEach(select => handleComplexValueTypeChange({ target: select })); // 重置表单时调用一次
+                document.querySelectorAll('.complex-value-type').forEach(select => handleComplexValueTypeChange({ target: select })); // 重置表单时调用一次
             });
         }
 
         function addComplexMessageBody() {
-            const messageBodyTemplate = document.getElementById('message-body-template');
+            const messageBodyTemplate = document.getElementById('complex-message-body-template');
             const newMessageBody = messageBodyTemplate.content.cloneNode(true);
             document.getElementById('complex-message-bodies').appendChild(newMessageBody);
-            document.querySelectorAll('.complex-message-body .complex-value-type').forEach(select => select.addEventListener('change', handleComplexValueTypeChange));
+            document.querySelectorAll('.complex-message-body .value-type').forEach(select => select.addEventListener('change', handleComplexValueTypeChange));
         }
 
         function addSimpleMessageBody() {
@@ -281,6 +349,32 @@
             const newMessageBody = messageBodyTemplate.content.cloneNode(true);
             document.getElementById('message-bodies').appendChild(newMessageBody);
             document.querySelectorAll('.message-body .value-type').forEach(select => select.addEventListener('change', handleValueTypeChange));
+        }
+
+        function addDataType() {
+            const newDataType = prompt('请输入新的Data Type:');
+            if (newDataType) {
+                fetch('/data_type', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ data_type: newDataType })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        const dataTypeSelects = document.querySelectorAll('[name="data_type"]');
+                        dataTypeSelects.forEach(select => {
+                            const option = document.createElement('option');
+                            option.value = newDataType;
+                            option.textContent = newDataType;
+                            select.insertBefore(option, select.querySelector('option[value="new"]'));
+                        });
+                    } else {
+                        alert('Failed to add new data type');
+                    }
+                });
+            }
         }
 
         function addValueType() {
@@ -314,6 +408,7 @@
             document.querySelectorAll('.value-type').forEach(select => select.addEventListener('change', handleValueTypeChange));
             document.querySelectorAll('.complex-value-type').forEach(select => select.addEventListener('change', handleComplexValueTypeChange));
             fetchMessages(); // 初始化时获取消息列表
+            fetchDataTypeOptions(); // 初始化时获取数据类型选项
         });
     </script>
 </head>
@@ -353,11 +448,17 @@
                                 <input type="text" name="key" required>
                             </div>
                             <div class="form-group">
+                                <label for="data_size">Data Size</label>
+                                <select name="data_size" required>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="4" selected>4</option>
+                                    <option value="8">8</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
                                 <label for="data_type">Data Type</label>
                                 <select name="data_type" required>
-                                    <option value="int">int</option>
-                                    <option value="float">float</option>
-                                    <option value="string">string</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -366,7 +467,7 @@
                                     <option value="range">Range</option>
                                     <option value="fix">Fix</option>
                                     <option value="default">Default</option>
-                                    <option value="new">新建...</option>
+                                    <option value="new">新建</option>
                                 </select>
                             </div>
                             <div class="form-group min-field">
@@ -417,11 +518,17 @@
                                 <input type="text" name="key" required>
                             </div>
                             <div class="form-group">
+                                <label for="data_size">Data Size</label>
+                                <select name="data_size" required>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="4" selected>4</option>
+                                    <option value="8">8</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
                                 <label for="data_type">Data Type</label>
                                 <select name="data_type" required>
-                                    <option value="int">int</option>
-                                    <option value="float">float</option>
-                                    <option value="string">string</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -430,7 +537,7 @@
                                     <option value="range">Range</option>
                                     <option value="fix">Fix</option>
                                     <option value="default">Default</option>
-                                    <option value="new">新建...</option>
+                                    <option value="new">新建</option>
                                 </select>
                             </div>
                             <div class="form-group min-field">
@@ -473,11 +580,62 @@
                     <input type="text" name="key" required>
                 </div>
                 <div class="form-group">
+                    <label for="data_size">Data Size</label>
+                    <select name="data_size" required>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="4" selected>4</option>
+                        <option value="8">8</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="data_type">Data Type</label>
                     <select name="data_type" required>
-                        <option value="int">int</option>
-                        <option value="float">float</option>
-                        <option value="string">string</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="value_type">Value Type</label>
+                    <select name="value_type" class="value-type" required>
+                        <option value="range">Range</option>
+                        <option value="fix">Fix</option>
+                        <option value="default">Default</option>
+                        <option value="new">新建...</option>
+                    </select>
+                </div>
+                <div class="form-group min-field">
+                    <label for="min">Min</label>
+                    <input type="number" name="min">
+                </div>
+                <div class="form-group max-field">
+                    <label for="max">Max</label>
+                    <input type="number" name="max">
+                </div>
+                <div class="form-group value-field" style="display: none;">
+                    <label for="value">Value</label>
+                    <input type="number" name="value">
+                </div>
+            </div>
+        </div>
+    </template>
+    <template id="complex-message-body-template">
+        <div class="complex-message-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="key">Key</label>
+                    <input type="text" name="key" required>
+                </div>
+                <div class="form-group">
+                    <label for="data_size">Data Size</label>
+                    <select name="data_size" required>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="4" selected>4</option>
+                        <option value="8">8</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="data_type">Data Type</label>
+                    <select name="data_type" required>
                     </select>
                 </div>
                 <div class="form-group">
