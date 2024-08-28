@@ -248,7 +248,11 @@
                     newOption.textContent = body.data_type;
                     dataTypeSelect.appendChild(newOption);
 
-                    newMessageBody.querySelector('[name="value_type"]').value = body.value_type;
+                    const valueTypeSelect = newMessageBody.querySelector('[name="value_type"]');
+                    const newOption1 = document.createElement('option');
+                    newOption1.value = body.value_type;
+                    newOption1.textContent = body.value_type;
+                    valueTypeSelect.appendChild(newOption1);
 
                     const minField = newMessageBody.querySelector('.min-field');
                     const maxField = newMessageBody.querySelector('.max-field');
@@ -631,10 +635,6 @@
                 <div class="form-group">
                     <label for="value_type">Value Type</label>
                     <select name="value_type" class="value-type" required>
-                        <option value="range">Range</option>
-                        <option value="fix">Fix</option>
-                        <option value="default">Default</option>
-                        <option value="new">新建...</option>
                     </select>
                 </div>
                 <div class="form-group min-field">
@@ -676,10 +676,6 @@
                 <div class="form-group">
                     <label for="value_type">Value Type</label>
                     <select name="value_type" class="value-type" required>
-                        <option value="range">Range</option>
-                        <option value="fix">Fix</option>
-                        <option value="default">Default</option>
-                        <option value="new">新建...</option>
                     </select>
                 </div>
                 <div class="form-group min-field">
