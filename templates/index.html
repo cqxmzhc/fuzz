@@ -238,8 +238,16 @@
                     const messageBodyTemplate = document.getElementById('message-body-template');
                     const newMessageBody = messageBodyTemplate.content.cloneNode(true);
 
+
                     newMessageBody.querySelector('[name="key"]').value = body.key;
-                    newMessageBody.querySelector('[name="data_type"]').value = body.data_type;
+                    // newMessageBody.querySelector('[name="data_type"]').value = body.data_type;
+
+                    const dataTypeSelect = newMessageBody.querySelector('[name="data_type"]');
+                    const newOption = document.createElement('option');
+                    newOption.value = body.data_type;
+                    newOption.textContent = body.data_type;
+                    dataTypeSelect.appendChild(newOption);
+
                     newMessageBody.querySelector('[name="value_type"]').value = body.value_type;
 
                     const minField = newMessageBody.querySelector('.min-field');
