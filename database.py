@@ -25,6 +25,7 @@ def init_db():
             min Real,
             max Real,
             value Real,
+            descriptor TEXT,
             FOREIGN KEY (message_id) REFERENCES messages (id)
         )
     ''')

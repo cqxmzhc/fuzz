@@ -104,6 +104,18 @@
         }
     </style>
     <script>
+        function addDropdown() {
+            const addDropdownBtn = document.getElementById('add-dropdown-btn');
+            const newDropdown = document.createElement('select');
+            newDropdown.name = 'descriptor';
+            newDropdown.className = 'descriptor';
+            newDropdown.required = true;
+            newDropdown.innerHTML = `
+                <option value="port">port</option>
+                <option value="ool">ool</option>
+            `;
+            addDropdownBtn.parentNode.insertBefore(newDropdown, addDropdownBtn);
+}
         function switchTab(event, tabId) {
             const tabs = document.querySelectorAll('.tab');
             const tabContents = document.querySelectorAll('.tab-content');
@@ -167,6 +179,51 @@
                     max: body.querySelector('[name="max"]').value,
                     value: body.querySelector('[name="value"]').value,
                     value_type: body.querySelector('[name="value_type"]').value
+                };
+                data.message_bodies.push(bodyData);
+            });
+
+            fetch('/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(message => {
+                const messageList = document.getElementById('message-list');
+                const listItem = document.createElement('li');
+                listItem.textContent = JSON.stringify(message);
+                messageList.appendChild(listItem);
+                event.target.reset();
+                document.querySelectorAll('.value-type').forEach(select => handleValueTypeChange({ target: select })); // 重置表单时调用一次
+            });
+        }
+
+        function addComplexMessage(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+            data.message_bodies = [];  // 初始化消息体数组
+
+
+            const dropdowns = document.querySelectorAll('select.descriptor');
+            const values = [];
+            dropdowns.forEach(dropdown => {
+                values.push(dropdown.value);
+            });
+
+            const messageBodies = document.querySelectorAll('.complex-message-body');
+            messageBodies.forEach(body => {
+                const bodyData = {
+                    key: body.querySelector('[name="key"]').value,
+                    data_type: body.querySelector('[name="data_type"]').value,
+                    min: body.querySelector('[name="min"]').value,
+                    max: body.querySelector('[name="max"]').value,
+                    value: body.querySelector('[name="value"]').value,
+                    value_type: body.querySelector('[name="value_type"]').value,
+                    descriptor: values
                 };
                 data.message_bodies.push(bodyData);
             });
@@ -322,7 +379,7 @@
         <div id="complex-message-tab" class="tab-content">
             <h1>Messages</h1>
             <h2>Add New Message</h2>
-            <form id="message-form" onsubmit="addMessage(event)">
+            <form id="message-form" onsubmit="addComplexMessage(event)">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="message_id">Message ID</label>
@@ -331,12 +388,12 @@
                     <div class="form-group">
                         <label for="message_type">Message Type</label>
                         <select id="message_type" name="message_type" required>
-                            <option value="simple">复杂类型</option>
+                            <option value="complex">复杂类型</option>
                         </select>
                     </div>
                 </div>
                 <div id="complex-message-bodies">
-                    <div class="message-body">
+                    <div class="complex-message-body">
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="key">Key</label>
@@ -369,8 +426,10 @@
                             </div>
                             <div class="form-group value-field">
                                 <label for="value">Value</label>
-                                <input type="number" name="value">
+                                <input type="" name="value">
                             </div>
+                            <button type="button" id="add-dropdown-btn" onclick="addDropdown()">新增descriptor</button>
+
                         </div>
                     </div>
                 </div>

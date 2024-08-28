@@ -3,6 +3,7 @@ from flask import jsonify
 from flask import Flask, request, jsonify, render_template
 import sqlite3
 from database import init_db  # 导入 init_db 函数
+import json
 
 app = Flask(__name__)
 
@@ -31,8 +32,12 @@ def get_messages():
                 message_id = message['id']
                 # 获取对应的消息体
                 message_bodies = conn.execute(
-                    'SELECT key, data_type, min, max, value, value_type FROM message_bodies WHERE message_id = ?', (message_id,)).fetchall()
+                    'SELECT key, data_type, min, max, value, value_type,descriptor FROM message_bodies WHERE message_id = ?', (message_id,)).fetchall()
                 bodies = [dict(body) for body in message_bodies]
+
+                for body in bodies:
+                    if body['descriptor']:
+                        body['descriptor'] = json.loads(body['descriptor'])
 
                 # 组合消息和消息体
                 message_data = {
@@ -72,11 +77,12 @@ def create_message():
         max_val = body.get('max')
         value = body.get('value')
         value_type = body.get('value_type')
+        descriptor = json.dumps(body.get('descriptor'))
 
         cursor.execute('''
-            INSERT INTO message_bodies (message_id, key, data_type, min, max, value,value_type)
-            VALUES (?, ?, ?, ?, ?, ?,?)
-        ''', (message_db_id, key, data_type, min_val, max_val, value, value_type))
+            INSERT INTO message_bodies (message_id, key, data_type, min, max, value,value_type,descriptor)
+            VALUES (?, ?, ?, ?, ?, ?,?,?)
+        ''', (message_db_id, key, data_type, min_val, max_val, value, value_type, descriptor))
 
     conn.commit()
     conn.close()
