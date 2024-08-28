@@ -127,6 +127,29 @@
             document.getElementById(tabId).classList.add('active');
         }
 
+        function handleComplexValueTypeChange(event) {
+            const valueType = event.target.value;
+            const minField = event.target.closest('.complex-message-body').querySelector('.min-field');
+            const maxField = event.target.closest('.complex-message-body').querySelector('.max-field');
+            const valueField = event.target.closest('.complex-message-body').querySelector('.value-field');
+
+            if (valueType === 'range') {
+                minField.style.display = 'block';
+                maxField.style.display = 'block';
+                valueField.style.display = 'none';
+            } else if (valueType === 'fix') {
+                minField.style.display = 'none';
+                maxField.style.display = 'none';
+                valueField.style.display = 'block';
+            } else if (valueType === 'new') {
+                addValueType();
+            } else {
+                minField.style.display = 'none';
+                maxField.style.display = 'none';
+                valueField.style.display = 'block';
+            }
+        }
+
         function handleValueTypeChange(event) {
             const valueType = event.target.value;
             const minField = event.target.closest('.message-body').querySelector('.min-field');
@@ -242,7 +265,7 @@
                 listItem.textContent = JSON.stringify(message);
                 messageList.appendChild(listItem);
                 event.target.reset();
-                document.querySelectorAll('.value-type').forEach(select => handleValueTypeChange({ target: select })); // 重置表单时调用一次
+                document.querySelectorAll('.value-type').forEach(select => handleComplexValueTypeChange({ target: select })); // 重置表单时调用一次
             });
         }
 
@@ -250,14 +273,14 @@
             const messageBodyTemplate = document.getElementById('message-body-template');
             const newMessageBody = messageBodyTemplate.content.cloneNode(true);
             document.getElementById('complex-message-bodies').appendChild(newMessageBody);
-            newMessageBody.querySelector('.value-type').addEventListener('change', handleValueTypeChange);
+            document.querySelectorAll('.complex-message-body .complex-value-type').forEach(select => select.addEventListener('change', handleComplexValueTypeChange));
         }
 
         function addSimpleMessageBody() {
             const messageBodyTemplate = document.getElementById('message-body-template');
             const newMessageBody = messageBodyTemplate.content.cloneNode(true);
             document.getElementById('message-bodies').appendChild(newMessageBody);
-            newMessageBody.querySelector('.value-type').addEventListener('change', handleValueTypeChange);
+            document.querySelectorAll('.message-body .value-type').forEach(select => select.addEventListener('change', handleValueTypeChange));
         }
 
         function addValueType() {
@@ -289,14 +312,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('default-tab').click();
             document.querySelectorAll('.value-type').forEach(select => select.addEventListener('change', handleValueTypeChange));
+            document.querySelectorAll('.complex-value-type').forEach(select => select.addEventListener('change', handleComplexValueTypeChange));
             fetchMessages(); // 初始化时获取消息列表
-
-            // 初始化时处理valuetype为range的情况
-            // document.querySelectorAll('.value-type').forEach(select => {
-            //     if (select.value === 'range') {
-            //         handleValueTypeChange({ target: select });
-            //     }
-            // });
         });
     </script>
 </head>
@@ -409,7 +426,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="value_type">Value Type</label>
-                                <select name="value_type" class="value-type" required>
+                                <select name="value_type" class="complex-value-type" required>
                                     <option value="range">Range</option>
                                     <option value="fix">Fix</option>
                                     <option value="default">Default</option>
@@ -480,7 +497,7 @@
                     <label for="max">Max</label>
                     <input type="number" name="max">
                 </div>
-                <div class="form-group value-field">
+                <div class="form-group value-field" style="display: none;">
                     <label for="value">Value</label>
                     <input type="number" name="value">
                 </div>
