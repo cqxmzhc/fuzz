@@ -292,11 +292,11 @@
             fetchMessages(); // 初始化时获取消息列表
 
             // 初始化时处理valuetype为range的情况
-            document.querySelectorAll('.value-type').forEach(select => {
-                if (select.value === 'range') {
-                    handleValueTypeChange({ target: select });
-                }
-            });
+            // document.querySelectorAll('.value-type').forEach(select => {
+            //     if (select.value === 'range') {
+            //         handleValueTypeChange({ target: select });
+            //     }
+            // });
         });
     </script>
 </head>
@@ -360,7 +360,7 @@
                                 <label for="max">Max</label>
                                 <input type="number" name="max">
                             </div>
-                            <div class="form-group value-field">
+                            <div class="form-group value-field" style="display: none;">
                                 <label for="value">Value</label>
                                 <input type="number" name="value">
                             </div>
@@ -424,7 +424,7 @@
                                 <label for="max">Max</label>
                                 <input type="number" name="max">
                             </div>
-                            <div class="form-group value-field">
+                            <div class="form-group value-field" style="display: none;">
                                 <label for="value">Value</label>
                                 <input type="" name="value">
                             </div>
