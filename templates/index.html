@@ -127,6 +127,13 @@
             document.getElementById(tabId).classList.add('active');
         }
 
+        function handleDataTypeChange(evnet){
+            data_type = event.target.value;
+            if (data_type === 'new'){
+                addDataType();
+            }
+        }
+
         function handleComplexValueTypeChange(event) {
             const valueType = event.target.value;
             const minField = event.target.closest('.complex-message-body').querySelector('.min-field');
@@ -195,12 +202,13 @@
                         newOption.textContent = '新建';
                         dataTypeSelect.appendChild(newOption);
 
-                // 设置默认选项
-        
                         // 设置默认选项
                         if (data.length > 0) {
                             dataTypeSelect.value = data[0]; // 设置第一个选项为默认选项
                         }
+
+                        // 增加change事件监听
+                        dataTypeSelect.addEventListener('change', handleDataTypeChange);
                     });
                 })
                 .catch(error => {
@@ -342,6 +350,7 @@
             const newMessageBody = messageBodyTemplate.content.cloneNode(true);
             document.getElementById('complex-message-bodies').appendChild(newMessageBody);
             document.querySelectorAll('.complex-message-body .value-type').forEach(select => select.addEventListener('change', handleComplexValueTypeChange));
+            fetchDataTypeOptions(); // 添加新的消息体时重新获取数据类型选项
         }
 
         function addSimpleMessageBody() {
@@ -349,6 +358,7 @@
             const newMessageBody = messageBodyTemplate.content.cloneNode(true);
             document.getElementById('message-bodies').appendChild(newMessageBody);
             document.querySelectorAll('.message-body .value-type').forEach(select => select.addEventListener('change', handleValueTypeChange));
+            fetchDataTypeOptions(); // 添加新的消息体时重新获取数据类型选项
         }
 
         function addDataType() {
