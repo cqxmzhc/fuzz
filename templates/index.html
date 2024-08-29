@@ -231,8 +231,15 @@
                 messageContainer.classList.add('message-container');
 
                 const messageHeader = document.createElement('h3');
-                messageHeader.textContent = `Message ID: ${message.message_id}, Type: ${message.message_type}`;
+                messageHeader.textContent = `Message Name: ${message.message_name}, Type: ${message.message_type}`;
                 messageContainer.appendChild(messageHeader);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = '删除';
+                deleteButton.onclick = () => {
+                    deleteMessage(message.message_name, messageContainer);
+                }
+                messageContainer.appendChild(deleteButton);
 
                 message.bodies.forEach(body => {
                     const messageBodyTemplate = document.getElementById('message-body-template');
@@ -252,6 +259,7 @@
                     const newOption1 = document.createElement('option');
                     newOption1.value = body.value_type;
                     newOption1.textContent = body.value_type;
+                    valueTypeSelect.innerHTML = ''
                     valueTypeSelect.appendChild(newOption1);
 
                     const minField = newMessageBody.querySelector('.min-field');
@@ -284,12 +292,33 @@
                         });
                     }
 
+                    // 设置button的value， 点击的时候传输
+                    newMessageBody.querySelector('.form-group button').setAttribute('message-name', message.message_name);
+                    newMessageBody.querySelector('.form-group button').setAttribute('key', body.key);
+
                     messageContainer.appendChild(newMessageBody);
                 });
 
                 messageList.appendChild(messageContainer);
             });
         });
+        }
+
+
+        function deleteMessage(id, messageContainer) {
+            fetch(`/message/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    messageContainer.remove();
+                } else {
+                    console.error('Failed to delete message');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting message:', error);
+            });
         }
 
         function addMessage(event) {
@@ -442,6 +471,31 @@
             }
         }
 
+        function removeMessageBody(button) {
+            // 如果message_name存在，则调用删除body接口
+            message_name = button.getAttribute('message-name');
+            key = button.getAttribute('key');
+            if (message_name) {
+                fetch(`/message_body/${message_name}/${key}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        const messageBody = button.closest('.message-body, .complex-message-body');
+                        messageBody.remove();
+                    } else {
+                        console.error('Failed to delete message body');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting message body:', error);
+                });
+            } else {
+                const messageBody = button.closest('.message-body, .complex-message-body');
+                messageBody.remove();
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('default-tab').click();
             document.querySelectorAll('.value-type').forEach(select => select.addEventListener('change', handleValueTypeChange));
@@ -469,8 +523,8 @@
             <form id="message-form" onsubmit="addMessage(event)">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="message_id">Message ID</label>
-                        <input type="text" id="message_id" name="message_id" required>
+                        <label for="message_name">Message Name</label>
+                        <input type="text" id="message_name" name="message_name" required>
                     </div>
                     <div class="form-group">
                         <label for="message_type">Message Type</label>
@@ -505,7 +559,6 @@
                                 <select name="value_type" class="value-type" required>
                                     <option value="range">Range</option>
                                     <option value="fix">Fix</option>
-                                    <option value="default">Default</option>
                                     <option value="new">新建</option>
                                 </select>
                             </div>
@@ -539,8 +592,8 @@
             <form id="message-form" onsubmit="addComplexMessage(event)">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="message_id">Message ID</label>
-                        <input type="text" id="message_id" name="message_id" required>
+                        <label for="message_name">Message Name</label>
+                        <input type="text" id="message_name" name="message_name" required>
                     </div>
                     <div class="form-group">
                         <label for="message_type">Message Type</label>
@@ -575,7 +628,6 @@
                                 <select name="value_type" class="complex-value-type" required>
                                     <option value="range">Range</option>
                                     <option value="fix">Fix</option>
-                                    <option value="default">Default</option>
                                     <option value="new">新建</option>
                                 </select>
                             </div>
@@ -635,6 +687,9 @@
                 <div class="form-group">
                     <label for="value_type">Value Type</label>
                     <select name="value_type" class="value-type" required>
+                        <option value="range">Range</option>
+                        <option value="fix">Fix</option>
+                        <option value="new">新建</option>
                     </select>
                 </div>
                 <div class="form-group min-field">
@@ -648,6 +703,9 @@
                 <div class="form-group value-field" style="display: none;">
                     <label for="value">Value</label>
                     <input type="" name="value">
+                </div>
+                <div class="form-group">
+                    <button type="button" onclick="removeMessageBody(this)" message-name="" key="">删除</button>
                 </div>
             </div>
         </div>
@@ -676,6 +734,9 @@
                 <div class="form-group">
                     <label for="value_type">Value Type</label>
                     <select name="value_type" class="value-type" required>
+                        <option value="range">Range</option>
+                        <option value="fix">Fix</option>
+                        <option value="new">新建</option>
                     </select>
                 </div>
                 <div class="form-group min-field">
@@ -689,6 +750,9 @@
                 <div class="form-group value-field" style="display: none;">
                     <label for="value">Value</label>
                     <input type="" name="value">
+                </div>
+                <div class="form-group">
+                    <button type="button" onclick="removeMessageBody(this)" message-name="" key="">删除</button>
                 </div>
             </div>
         </div>

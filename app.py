@@ -25,14 +25,14 @@ def get_messages():
         with get_db_connection() as conn:
             # 获取所有消息
             messages = conn.execute(
-                'SELECT id, message_id, message_type FROM messages').fetchall()
+                'SELECT id, message_name, message_type FROM messages').fetchall()
             message_list = []
 
             for message in messages:
-                message_id = message['id']
+                message_name = message['message_name']
                 # 获取对应的消息体
                 message_bodies = conn.execute(
-                    'SELECT key, data_type, min, max, value, value_type,descriptor FROM message_bodies WHERE message_id = ?', (message_id,)).fetchall()
+                    'SELECT key, data_type, min, max, value, value_type,descriptor FROM message_bodies WHERE message_name = ?', (message_name,)).fetchall()
                 bodies = [dict(body) for body in message_bodies]
 
                 for body in bodies:
@@ -42,10 +42,11 @@ def get_messages():
                 # 组合消息和消息体
                 message_data = {
                     'id': message['id'],
-                    'message_id': message['message_id'],
+                    'message_name': message['message_name'],
                     'message_type': message['message_type'],
                     'bodies': bodies
                 }
+                print(message_data)
                 message_list.append(message_data)
 
             return jsonify(message_list)
@@ -56,7 +57,7 @@ def get_messages():
 @app.route('/message', methods=['POST'])
 def create_message():
     new_message = request.get_json()
-    message_id = new_message['message_id']
+    message_name = new_message['message_name']
     message_type = new_message['message_type']
     message_bodies = new_message['message_bodies']  # 包含多个消息体的列表
 
@@ -64,9 +65,9 @@ def create_message():
     cursor = conn.cursor()
 
     cursor.execute('''
-        INSERT INTO messages (message_id, message_type)
+        INSERT INTO messages (message_name, message_type)
         VALUES (?, ?)
-    ''', (message_id, message_type))
+    ''', (message_name, message_type))
 
     message_db_id = cursor.lastrowid
 
@@ -80,9 +81,9 @@ def create_message():
         descriptor = json.dumps(body.get('descriptor'))
 
         cursor.execute('''
-            INSERT INTO message_bodies (message_id, key, data_type, min, max, value,value_type,descriptor)
+            INSERT INTO message_bodies (message_name, key, data_type, min, max, value,value_type,descriptor)
             VALUES (?, ?, ?, ?, ?, ?,?,?)
-        ''', (message_db_id, key, data_type, min_val, max_val, value, value_type, descriptor))
+        ''', (message_name, key, data_type, min_val, max_val, value, value_type, descriptor))
 
     conn.commit()
     conn.close()
@@ -92,7 +93,7 @@ def create_message():
 @app.route('/message/<int:id>', methods=['PUT'])
 def update_message(id):
     updated_message = request.get_json()
-    message_id = updated_message['message_id']
+    message_name = updated_message['message_name']
     message_type = updated_message['message_type']
     key = updated_message['key']
     data_type = updated_message['data_type']
@@ -103,18 +104,31 @@ def update_message(id):
     conn = get_db_connection()
     conn.execute('''
         UPDATE messages
-        SET message_id = ?, message_type = ?, key = ?, data_type = ?, min = ?, max = ?, value = ?
+        SET message_name = ?, message_type = ?, key = ?, data_type = ?, min = ?, max = ?, value = ?
         WHERE id = ?
-    ''', (message_id, message_type, key, data_type, min_val, max_val, value, id))
+    ''', (message_name, message_type, key, data_type, min_val, max_val, value, id))
     conn.commit()
     conn.close()
     return jsonify(updated_message)
 
 
-@app.route('/message/<int:id>', methods=['DELETE'])
+@app.route('/message/<string:id>', methods=['DELETE'])
 def delete_message(id):
     conn = get_db_connection()
-    conn.execute('DELETE FROM messages WHERE id = ?', (id,))
+    conn.execute('DELETE FROM messages WHERE message_name = ?', (id,))
+    conn.execute('DELETE FROM message_bodies WHERE message_name = ?', (id,))
+    conn.commit()
+    conn.close()
+    return '', 204
+
+# 增加一个删除消息体的接口
+
+
+@app.route('/message_body/<string:name>/<string:key>', methods=['DELETE'])
+def delete_message_body(name, key):
+    conn = get_db_connection()
+    conn.execute(
+        'DELETE FROM message_bodies WHERE message_name = ? AND key = ?', (name, key))
     conn.commit()
     conn.close()
     return '', 204

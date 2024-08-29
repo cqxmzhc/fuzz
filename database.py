@@ -9,7 +9,7 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            message_id TEXT UNIQUE NOT NULL,
+            message_name TEXT UNIQUE NOT NULL,
             message_type TEXT NOT NULL
         )
     ''')
@@ -18,7 +18,7 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS message_bodies (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            message_id INTEGER NOT NULL,
+            message_name TEXT NOT NULL,
             key TEXT NOT NULL,
             data_type TEXT NOT NULL,
             value_type TEXT NOT NULL,
@@ -26,7 +26,7 @@ def init_db():
             max Real,
             value Real,
             descriptor TEXT,
-            FOREIGN KEY (message_id) REFERENCES messages (id)
+            FOREIGN KEY (message_name) REFERENCES messages (message_name)
         )
     ''')
 
