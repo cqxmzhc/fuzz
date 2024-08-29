@@ -280,7 +280,13 @@
                     }
 
                     if (body.descriptor) {
+                        const descriptorContainer = document.createElement('div');
+                        descriptorContainer.className = 'form-row';
+
                         body.descriptor.forEach(descriptor => {
+                            const newDropdownContainer = document.createElement('div');
+                            newDropdownContainer.className = 'form-group';
+
                             const newDropdown = document.createElement('select');
                             newDropdown.name = 'descriptor';
                             newDropdown.className = 'descriptor';
@@ -288,8 +294,12 @@
                             newDropdown.innerHTML = `
                                 <option value="${descriptor}">${descriptor}</option>
                             `;
-                            newMessageBody.querySelector('.form-row').appendChild(newDropdown);
+
+                            newDropdownContainer.appendChild(newDropdown);
+                            descriptorContainer.appendChild(newDropdownContainer);
                         });
+
+                        messageContainer.appendChild(descriptorContainer);
                     }
 
                     // 设置button的value， 点击的时候传输
@@ -604,6 +614,7 @@
                 </div>
                 <div id="complex-message-bodies">
                     <div class="complex-message-body">
+                        <button type="button" id="add-dropdown-btn" onclick="addDropdown()">新增descriptor</button>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="key">Key</label>
@@ -643,7 +654,6 @@
                                 <label for="value">Value</label>
                                 <input type="" name="value">
                             </div>
-                            <button type="button" id="add-dropdown-btn" onclick="addDropdown()">新增descriptor</button>
 
                         </div>
                     </div>
