@@ -177,11 +177,51 @@
                 valueField.style.display = 'block';
             } else if (valueType === 'new') {
                 addValueType();
+            } else if (valueType === 'Window') {
+                minField.style.display = 'none';
+                maxField.style.display = 'none';
+                valueField.style.display = 'none';
             } else {
                 minField.style.display = 'none';
                 maxField.style.display = 'none';
                 valueField.style.display = 'block';
             }
+        }
+
+        function fetchValueTypes() {
+            fetch('/value_types')
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    const valueTypeSelects = document.getElementsByName("value_type");
+        
+                    valueTypeSelects.forEach(valueTypeSelect => {
+                        valueTypeSelect.innerHTML = ''; // 清空现有选项
+        
+                        data.forEach(type => {
+                            const option = document.createElement('option');
+                            option.value = type;
+                            option.textContent = type;
+                            valueTypeSelect.appendChild(option);
+                        });
+
+                        const newOption = document.createElement('option');
+                        newOption.value = 'new';
+                        newOption.textContent = '新建';
+                        valueTypeSelect.appendChild(newOption);
+
+                        // 设置默认选项
+                        if (data.length > 0) {
+                            valueTypeSelect.value = data[0]; // 设置第一个选项为默认选项
+                        }
+
+                        // 增加change事件监听
+                        valueTypeSelect.addEventListener('change', handleValueTypeChange);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching types:', error);
+                });
         }
 
         function fetchDataTypeOptions() {
@@ -216,7 +256,7 @@
                     });
                 })
                 .catch(error => {
-                    console.error('Error fetching data types:', error);
+                    console.error('Error fetching types:', error);
                 });
         }
 
@@ -272,6 +312,10 @@
                         valueField.style.display = 'none';
                         newMessageBody.querySelector('[name="min"]').value = body.min || '';
                         newMessageBody.querySelector('[name="max"]').value = body.max || '';
+                    } else if (body.value_type === 'Window') {
+                        minField.style.display = 'none';
+                        maxField.style.display = 'none';
+                        valueField.style.display = 'none';
                     } else {
                         minField.style.display = 'none';
                         maxField.style.display = 'none';
@@ -337,7 +381,7 @@
             const data = Object.fromEntries(formData.entries());
             data.message_bodies = [];  // 初始化消息体数组
 
-            const messageBodies = document.querySelectorAll('.message-body');
+            const messageBodies = document.querySelectorAll('#simple-message-tab .message-body');
             messageBodies.forEach(body => {
                 const bodyData = {
                     key: body.querySelector('[name="key"]').value,
@@ -419,6 +463,7 @@
             document.getElementById('complex-message-bodies').appendChild(newMessageBody);
             document.querySelectorAll('.complex-message-body .value-type').forEach(select => select.addEventListener('change', handleComplexValueTypeChange));
             fetchDataTypeOptions(); // 添加新的消息体时重新获取数据类型选项
+            fetchValueTypes(); // 添加新的消息体时重新获取数据类型选项
         }
 
         function addSimpleMessageBody() {
@@ -427,10 +472,11 @@
             document.getElementById('message-bodies').appendChild(newMessageBody);
             document.querySelectorAll('.message-body .value-type').forEach(select => select.addEventListener('change', handleValueTypeChange));
             fetchDataTypeOptions(); // 添加新的消息体时重新获取数据类型选项
+            fetchValueTypes();
         }
 
         function addDataType() {
-            const newDataType = prompt('请输入新的Data Type:');
+            const newDataType = prompt('请输入新的type:');
             if (newDataType) {
                 fetch('/data_type', {
                     method: 'POST',
@@ -449,21 +495,21 @@
                             select.insertBefore(option, select.querySelector('option[value="new"]'));
                         });
                     } else {
-                        alert('Failed to add new data type');
+                        alert('Failed to add new type');
                     }
                 });
             }
         }
 
         function addValueType() {
-            const newValueType = prompt('请输入新的Value Type:');
+            const newValueType = prompt('请输入新的subtype:');
             if (newValueType) {
-                fetch('/data_type', {
+                fetch('/value_type', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ data_type: newValueType })
+                    body: JSON.stringify({ value_type: newValueType })
                 })
                 .then(response => {
                     if (response.ok) {
@@ -475,7 +521,7 @@
                             select.insertBefore(option, select.querySelector('option[value="new"]'));
                         });
                     } else {
-                        alert('Failed to add new value type');
+                        alert('Failed to add new subtype');
                     }
                 });
             }
@@ -512,6 +558,7 @@
             document.querySelectorAll('.complex-value-type').forEach(select => select.addEventListener('change', handleComplexValueTypeChange));
             fetchMessages(); // 初始化时获取消息列表
             fetchDataTypeOptions(); // 初始化时获取数据类型选项
+            fetchValueTypes();
         });
     </script>
 </head>
@@ -555,7 +602,7 @@
                                 <input type="text" name="key" required>
                             </div>
                             <div class="form-group">
-                                <label for="data_size">Data Size</label>
+                                <label for="data_size">length</label>
                                 <select name="data_size" required>
                                     <option value="1">1</option>
                                     <option value="2">2</option>
@@ -564,12 +611,12 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="data_type">Data Type</label>
+                                <label for="data_type">type</label>
                                 <select name="data_type" required>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="value_type">Value Type</label>
+                                <label for="value_type">subtype</label>
                                 <select name="value_type" class="value-type" required>
                                     <option value="range">Range</option>
                                     <option value="fix">Fix</option>
@@ -629,7 +676,7 @@
                                 <input type="text" name="key" required>
                             </div>
                             <div class="form-group">
-                                <label for="data_size">Data Size</label>
+                                <label for="data_size">length</label>
                                 <select name="data_size" required>
                                     <option value="1">1</option>
                                     <option value="2">2</option>
@@ -638,12 +685,12 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="data_type">Data Type</label>
+                                <label for="data_type">type</label>
                                 <select name="data_type" required>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="value_type">Value Type</label>
+                                <label for="value_type">subtype</label>
                                 <select name="value_type" class="complex-value-type" required>
                                     <option value="range">Range</option>
                                     <option value="fix">Fix</option>
@@ -689,7 +736,7 @@
                     <input type="text" name="key" required>
                 </div>
                 <div class="form-group">
-                    <label for="data_size">Data Size</label>
+                    <label for="data_size">length</label>
                     <select name="data_size" required>
                         <option value="1">1</option>
                         <option value="2">2</option>
@@ -698,12 +745,12 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="data_type">Data Type</label>
+                    <label for="data_type">type</label>
                     <select name="data_type" required>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="value_type">Value Type</label>
+                    <label for="value_type">subtype</label>
                     <select name="value_type" class="value-type" required>
                         <option value="range">Range</option>
                         <option value="fix">Fix</option>
@@ -736,7 +783,7 @@
                     <input type="text" name="key" required>
                 </div>
                 <div class="form-group">
-                    <label for="data_size">Data Size</label>
+                    <label for="data_size">length</label>
                     <select name="data_size" required>
                         <option value="1">1</option>
                         <option value="2">2</option>
@@ -745,12 +792,12 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="data_type">Data Type</label>
+                    <label for="data_type">type</label>
                     <select name="data_type" required>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="value_type">Value Type</label>
+                    <label for="value_type">subtype</label>
                     <select name="value_type" class="value-type" required>
                         <option value="range">Range</option>
                         <option value="fix">Fix</option>

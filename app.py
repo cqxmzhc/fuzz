@@ -123,9 +123,8 @@ def delete_message(id):
     conn.close()
     return '', 204
 
+
 # 增加一个删除消息体的接口
-
-
 @app.route('/message_body/<string:name>/<string:key>', methods=['DELETE'])
 def delete_message_body(name, key):
     conn = get_db_connection()
@@ -157,6 +156,33 @@ def add_data_type():
     except sqlite3.IntegrityError:
         conn.close()
         return jsonify({'error': 'Data type already exists'}), 400
+    conn.close()
+    return '', 201
+
+# get value types
+
+
+@app.route('/value_types', methods=['GET'])
+def get_value_types():
+    conn = get_db_connection()
+    value_types = conn.execute('SELECT value_type FROM value_types').fetchall()
+    conn.close()
+    return jsonify([row['value_type'] for row in value_types])
+
+
+@app.route('/value_type', methods=['POST'])
+def add_value_type():
+    new_value_type = request.get_json()['value_type']
+    conn = get_db_connection()
+    try:
+        conn.execute('''
+            INSERT INTO value_types (value_type)
+            VALUES (?)
+        ''', (new_value_type,))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.close()
+        return jsonify({'error': 'Value type already exists'}), 400
     conn.close()
     return '', 201
 

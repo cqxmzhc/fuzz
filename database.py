@@ -39,6 +39,14 @@ def init_db():
         )
     ''')
 
+    # 创建值类型表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS value_types (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            value_type TEXT NOT NULL UNIQUE
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
