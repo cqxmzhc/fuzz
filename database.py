@@ -11,7 +11,8 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             message_id INTEGER NOT NULL,
             message_name TEXT UNIQUE NOT NULL,
-            message_type TEXT NOT NULL
+            message_type TEXT NOT NULL,
+            message_size TEXT NOT NULL
         )
     ''')
 

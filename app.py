@@ -25,7 +25,7 @@ def get_messages():
         with get_db_connection() as conn:
             # 获取所有消息
             messages = conn.execute(
-                'SELECT id, message_id, message_name, message_type FROM messages').fetchall()
+                'SELECT id, message_id, message_name, message_type,message_size FROM messages').fetchall()
             message_list = []
 
             for message in messages:
@@ -45,6 +45,7 @@ def get_messages():
                     'message_name': message['message_name'],
                     'message_type': message['message_type'],
                     'message_id': message['message_id'],
+                    'message_size': message['message_size'],
                     'bodies': bodies
                 }
                 print(message_data)
@@ -61,15 +62,16 @@ def create_message():
     message_name = new_message['message_name']
     message_type = new_message['message_type']
     message_id = new_message['message_id']
+    message_size = new_message['message_size']
     message_bodies = new_message['message_bodies']  # 包含多个消息体的列表
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute('''
-        INSERT INTO messages (message_id, message_name, message_type)
-        VALUES (?, ?,?)
-    ''', (message_id, message_name, message_type))
+        INSERT INTO messages (message_id, message_name, message_type, message_size)
+        VALUES (?, ?,?,?)
+    ''', (message_id, message_name, message_type, message_size))
 
     message_db_id = cursor.lastrowid
 
