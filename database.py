@@ -9,6 +9,7 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message_id INTEGER NOT NULL,
             message_name TEXT UNIQUE NOT NULL,
             message_type TEXT NOT NULL
         )
