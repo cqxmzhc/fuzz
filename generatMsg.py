@@ -104,9 +104,6 @@ def build_code():
     return header + fields_info_str + complicated_msg + footer
 
 
-print(build_code())
-
-
 '''
 //if complicated message\
     msg->msgh_bits |= MACH_MSGH_BITS_COMPLEX;\

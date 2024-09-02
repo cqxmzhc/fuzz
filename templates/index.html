@@ -281,6 +281,30 @@
                 }
                 messageContainer.appendChild(deleteButton);
 
+                if (message.descriptor) {
+                    const descriptorContainer = document.createElement('div');
+                    descriptorContainer.className = 'form-row';
+
+                    message.descriptor.forEach(descriptor => {
+                        const newDropdownContainer = document.createElement('div');
+                        newDropdownContainer.className = 'form-group';
+
+                        const newDropdown = document.createElement('select');
+                        newDropdown.name = 'descriptor';
+                        newDropdown.className = 'descriptor';
+                        newDropdown.required = true;
+                        newDropdown.innerHTML = `
+                            <option value="${descriptor}">${descriptor}</option>
+                        `;
+
+                        newDropdownContainer.appendChild(newDropdown);
+                        descriptorContainer.appendChild(newDropdownContainer);
+                    });
+
+                    messageContainer.appendChild(descriptorContainer);
+                }
+
+
                 message.bodies.forEach(body => {
                     const messageBodyTemplate = document.getElementById('message-body-template');
                     const newMessageBody = messageBodyTemplate.content.cloneNode(true);
@@ -302,6 +326,13 @@
                     valueTypeSelect.innerHTML = ''
                     valueTypeSelect.appendChild(newOption1);
 
+                    const dataSizeTypeSelect = newMessageBody.querySelector('[name="data_size"]');
+                    const dataSizeOption = document.createElement('option');
+                    dataSizeOption.value = body.length;
+                    dataSizeOption.textContent = body.length;
+                    dataSizeTypeSelect.innerHTML = ''
+                    dataSizeTypeSelect.appendChild(dataSizeOption);
+
                     const minField = newMessageBody.querySelector('.min-field');
                     const maxField = newMessageBody.querySelector('.max-field');
                     const valueField = newMessageBody.querySelector('.value-field');
@@ -321,29 +352,6 @@
                         maxField.style.display = 'none';
                         valueField.style.display = 'block';
                         newMessageBody.querySelector('[name="value"]').value = body.value || '';
-                    }
-
-                    if (body.descriptor) {
-                        const descriptorContainer = document.createElement('div');
-                        descriptorContainer.className = 'form-row';
-
-                        body.descriptor.forEach(descriptor => {
-                            const newDropdownContainer = document.createElement('div');
-                            newDropdownContainer.className = 'form-group';
-
-                            const newDropdown = document.createElement('select');
-                            newDropdown.name = 'descriptor';
-                            newDropdown.className = 'descriptor';
-                            newDropdown.required = true;
-                            newDropdown.innerHTML = `
-                                <option value="${descriptor}">${descriptor}</option>
-                            `;
-
-                            newDropdownContainer.appendChild(newDropdown);
-                            descriptorContainer.appendChild(newDropdownContainer);
-                        });
-
-                        messageContainer.appendChild(descriptorContainer);
                     }
 
                     // 设置button的value， 点击的时候传输
@@ -389,7 +397,8 @@
                     min: body.querySelector('[name="min"]').value,
                     max: body.querySelector('[name="max"]').value,
                     value: body.querySelector('[name="value"]').value,
-                    value_type: body.querySelector('[name="value_type"]').value
+                    value_type: body.querySelector('[name="value_type"]').value,
+                    length: body.querySelector('[name="data_size"]').value
                 };
                 data.message_bodies.push(bodyData);
             });
@@ -419,11 +428,12 @@
             data.message_bodies = [];  // 初始化消息体数组
 
 
-            const dropdowns = document.querySelectorAll('select.descriptor');
+            const dropdowns = document.querySelectorAll('.complex-message-body .descriptor');
             const values = [];
             dropdowns.forEach(dropdown => {
                 values.push(dropdown.value);
             });
+            data.descriptor = values;
 
             const messageBodies = document.querySelectorAll('.complex-message-body');
             messageBodies.forEach(body => {
@@ -434,7 +444,7 @@
                     max: body.querySelector('[name="max"]').value,
                     value: body.querySelector('[name="value"]').value,
                     value_type: body.querySelector('[name="value_type"]').value,
-                    descriptor: values
+                    length: body.querySelector('[name="data_size"]').value
                 };
                 data.message_bodies.push(bodyData);
             });

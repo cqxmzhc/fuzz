@@ -12,7 +12,8 @@ def init_db():
             message_id INTEGER NOT NULL,
             message_name TEXT UNIQUE NOT NULL,
             message_type TEXT NOT NULL,
-            message_size TEXT NOT NULL
+            message_size TEXT NOT NULL,
+            descriptor TEXT
         )
     ''')
 
@@ -22,12 +23,12 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             message_name TEXT NOT NULL,
             key TEXT NOT NULL,
+            length INTEGER NOT NULL,
             data_type TEXT NOT NULL,
             value_type TEXT NOT NULL,
             min Real,
             max Real,
             value Real,
-            descriptor TEXT,
             FOREIGN KEY (message_name) REFERENCES messages (message_name)
         )
     ''')

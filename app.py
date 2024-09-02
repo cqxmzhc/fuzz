@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify, render_template
 import sqlite3
 from database import init_db  # 导入 init_db 函数
 import json
+from generatMsg import buildHeader, buildFooter, build_fields, build_complicated_msg
 
 app = Flask(__name__)
 
@@ -25,19 +26,15 @@ def get_messages():
         with get_db_connection() as conn:
             # 获取所有消息
             messages = conn.execute(
-                'SELECT id, message_id, message_name, message_type,message_size FROM messages').fetchall()
+                'SELECT id, message_id, message_name, message_type,message_size,descriptor FROM messages').fetchall()
             message_list = []
 
             for message in messages:
                 message_name = message['message_name']
                 # 获取对应的消息体
                 message_bodies = conn.execute(
-                    'SELECT key, data_type, min, max, value, value_type,descriptor FROM message_bodies WHERE message_name = ?', (message_name,)).fetchall()
+                    'SELECT key, data_type, length, min, max, value, value_type FROM message_bodies WHERE message_name = ?', (message_name,)).fetchall()
                 bodies = [dict(body) for body in message_bodies]
-
-                for body in bodies:
-                    if body['descriptor']:
-                        body['descriptor'] = json.loads(body['descriptor'])
 
                 # 组合消息和消息体
                 message_data = {
@@ -48,7 +45,10 @@ def get_messages():
                     'message_size': message['message_size'],
                     'bodies': bodies
                 }
-                print(message_data)
+
+                if message['descriptor']:
+                    message_data['descriptor'] = json.loads(
+                        message['descriptor'])
                 message_list.append(message_data)
 
             return jsonify(message_list)
@@ -63,15 +63,17 @@ def create_message():
     message_type = new_message['message_type']
     message_id = new_message['message_id']
     message_size = new_message['message_size']
+    descriptor = new_message.get('descriptor')
+    descriptor = json.dumps(descriptor)
     message_bodies = new_message['message_bodies']  # 包含多个消息体的列表
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute('''
-        INSERT INTO messages (message_id, message_name, message_type, message_size)
-        VALUES (?, ?,?,?)
-    ''', (message_id, message_name, message_type, message_size))
+        INSERT INTO messages (message_id, message_name, message_type, message_size,descriptor)
+        VALUES (?, ?,?,?,?)
+    ''', (message_id, message_name, message_type, message_size, descriptor))
 
     message_db_id = cursor.lastrowid
 
@@ -82,12 +84,15 @@ def create_message():
         max_val = body.get('max')
         value = body.get('value')
         value_type = body.get('value_type')
-        descriptor = json.dumps(body.get('descriptor'))
+        length = body.get('length')
+
+        if value_type == 'enum':
+            value = json.dumps(value.split(','))
 
         cursor.execute('''
-            INSERT INTO message_bodies (message_name, key, data_type, min, max, value,value_type,descriptor)
+            INSERT INTO message_bodies (message_name, key, data_type, length, min, max, value,value_type)
             VALUES (?, ?, ?, ?, ?, ?,?,?)
-        ''', (message_name, key, data_type, min_val, max_val, value, value_type, descriptor))
+        ''', (message_name, key, data_type, length, min_val, max_val, value, value_type))
 
     conn.commit()
     conn.close()
@@ -187,6 +192,68 @@ def add_value_type():
         return jsonify({'error': 'Value type already exists'}), 400
     conn.close()
     return '', 201
+
+
+@app.route('/generate_code', methods=['GET'])
+def generate_code():
+    try:
+        with get_db_connection() as conn:
+            # 获取所有消息
+            messages = conn.execute(
+                'SELECT id, message_id, message_name, message_type, message_size,descriptor FROM messages'
+            ).fetchall()
+            code_list = []
+
+            for message in messages:
+                message_name = message['message_name']
+                message_id = message['message_id']
+                message_size = message['message_size']
+                descriptor = message.get('descriptor')
+                if descriptor:
+                    descriptor = json.loads(descriptor)
+
+                message_bodies = conn.execute(
+                    'SELECT key, data_type, length, min, max, value, value_type, FROM message_bodies WHERE message_name = ?',
+                    (message_name,)
+                ).fetchall()
+                bodies = [dict(body) for body in message_bodies]
+
+                fields_info = {}
+                for body in bodies:
+                    key = body['key']
+                    data_type = body['data_type']
+                    value_type = body['value_type']
+                    min_val = body.get('min')
+                    max_val = body.get('max')
+                    value = body.get('value')
+                    length = body['length']
+
+                    fields_info[key] = {
+                        "length": length,
+                        "type": data_type,
+                        "subtype": value_type,
+                        "min": min_val,
+                        "max": max_val,
+                        "value": value,
+                    }
+
+                    if value_type == "enum":
+                        fields_info[key]["enums"] = json.loads(value)
+
+                descriptorCount = len(descriptor)
+
+                header = buildHeader(message_name, message_id, message_size)
+                fields_info_str = build_fields(fields_info)
+                complicated_msg = build_complicated_msg(
+                    descriptorCount, descriptor)
+                footer = buildFooter()
+
+                code = header + fields_info_str + complicated_msg + footer
+                code_list.append(code)
+
+            return jsonify(code_list)
+    except sqlite3.Error as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
