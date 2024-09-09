@@ -820,7 +820,10 @@
         }
 
         function exportCode() {
-            fetch('/generate_code')
+            const startId = document.getElementById('start_id').value;
+            const endId = document.getElementById('end_id').value;
+
+            fetch('/generate_code?start_id=' + startId + '&end_id=' + endId)
                 .then(response => response.json())
                 .then(codeList => {
                     const blob = new Blob([codeList.join('\n')], { type: 'text/plain' });
@@ -1095,6 +1098,10 @@
         <div id="message-list-tab" class="tab-content">
             <h2>Message List</h2>
             <button id="export-button" onclick="exportCode()">导出代码</button>
+            <label for="start_id">FromID:</label>
+            <input type="number" id="start_id" name="start_id">
+            <label for="end_id">ToID:</label>
+            <input type="number" id="end_id" name="end_id">
             <ul id="message-list"></ul>
         </div>
         <div id="type-list-tab" class="tab-content">

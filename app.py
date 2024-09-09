@@ -237,13 +237,43 @@ def add_value_type():
 
 @app.route('/generate_code', methods=['GET'])
 def generate_code():
+    start_id = request.args.get('start_id', type=int)
+    end_id = request.args.get('end_id', type=int)
+
     try:
         with get_db_connection() as conn:
-            # 获取所有消息
-            messages = conn.execute(
-                'SELECT id, message_id, message_name, message_type, message_size,descriptor FROM messages'
-            ).fetchall()
+            query = ""
+            if start_id and end_id:
+                query = f'''
+                    SELECT id, message_id, message_name, message_type, message_size, descriptor 
+                    FROM messages 
+                    WHERE message_id BETWEEN {start_id} AND {end_id}
+                '''
+            elif start_id:
+                query = f'''
+                    SELECT id, message_id, message_name, message_type, message_size, descriptor 
+                    FROM messages 
+                    WHERE message_id >= {start_id}
+                '''
+            elif end_id:
+                query = f'''
+                    SELECT id, message_id, message_name, message_type, message_size, descriptor 
+                    FROM messages 
+                    WHERE message_id <= {end_id}
+                '''
+            else:
+                query = '''
+                    SELECT id, message_id, message_name, message_type, message_size, descriptor 
+                    FROM messages 
+                '''
+
+            print(query)
+            messages = conn.execute(query).fetchall()
             code_list = []
+
+            message_names = [message['message_name'] for message in messages]
+            function_define = buildFunctionDefine(message_names)
+            function_routine = insertFunctionRoutine(message_names)
 
             for message in messages:
                 message_name = message['message_name']
@@ -281,9 +311,6 @@ def generate_code():
                     if value_type == "enum":
                         fields_info[key]["enums"] = json.loads(value)
 
-                function_define = buildFunctionDefine([message_name])
-                function_routine = insertFunctionRoutine([message_name])
-
                 complicated_msg = ''
                 if descriptor:
                     descriptorCount = len(descriptor)
@@ -294,7 +321,7 @@ def generate_code():
                 fields_info_str = build_fields(fields_info)
                 footer = buildFooter()
 
-                code = function_define+function_routine + header + \
+                code = function_define + function_routine + header + \
                     complicated_msg + fields_info_str + footer
                 code_list.append(code)
 
