@@ -1,3 +1,16 @@
+def buildFunctionDefine(names):
+    functionDefine = ""
+    for name in names:
+        functionDefine += f"kern_return_t {name}(mach_port_t port);\n"
+    return functionDefine
+
+def insertFunctionRoutine(names):
+    #[cgxServices_routines addObject:[NSValue valueWithPointer:(cgxServices_funcPtr)XGetZoomParameters]];
+    functionRoutine = ""
+    for name in names:
+        functionRoutine += f"[cgxServices_routines addObject:[NSValue valueWithPointer:(cgxServices_funcPtr){name}]];\n"
+    return functionRoutine
+
 def buildHeader(name, msgID, sendSize):
     header_template = f"kern_return_t {name}(mach_port_t port){{\n\
     mach_msg_header_t *msg = malloc(0x4000);\n\
@@ -11,12 +24,13 @@ def buildHeader(name, msgID, sendSize):
 
 
 def buildFooter():
-    footer_template = "    kr = mach_msg(msg, MACH_SEND_MSG|MACH_RCV_MSG, msg->msgh_size, 0x4000,  msg->msgh_local_port, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);\n\
-        if(kr == KERN_SUCCESS){\n\
-            \n\
-        }\n\
-        free(msg);\n\
-        return kr;\n\
+    footer_template = \
+"    kr = mach_msg(msg, MACH_SEND_MSG|MACH_RCV_MSG, msg->msgh_size, 0x4000,  msg->msgh_local_port, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);\n\
+    if(kr == KERN_SUCCESS){\n\
+    \n\
+    }\n\
+    free(msg);\n\
+    return kr;\n\
 }\n"
     return footer_template
 
@@ -27,36 +41,42 @@ def build_fields(fields_info):
     for key, value in fields_info.items():
         value_len = value["length"]
         value_type = value["type"]
-        if value_type == "num":
+        size_type = "uint32_t"
+        if value_len == 1:
+            size_type = "char"
+        elif value_len == 2:
+            size_type = "uint16_t"
+        elif value_len == 4:
             size_type = "uint32_t"
-            if value_len == 1:
-                size_type = "char"
-            elif value_len == 2:
-                size_type = "uint16_t"
-            elif value_len == 4:
-                size_type = "uint32_t"
-            elif value_len == 8:
-                size_type = "uint64_t"
+        elif value_len == 8:
+            size_type = "uint64_t"
 
+        if value_type == "num":
             value_subtype = value["subtype"]
             if value_subtype == "range":
                 min = value["min"]
                 max = value["max"]
-                fields_info_template += f"    *({size_type}*)((char*)msg+{
-                    key}) = random_number_between({min},{max});\n"
+                fields_info_template += f"    *({size_type}*)((char*)msg+{key}) = random_number_between({min},{max});\n"
             if value_subtype == "enum":
                 enums = value["enums"]
                 enums = "[" + ", ".join(f"@{x}" for x in enums) + "]"
-                fields_info_template += f"    *({size_type}*)((char*)msg+{
-                    key}) = random_from_array((NSMutableArray*)@{enums});\n"
+                fields_info_template += f"    *({size_type}*)((char*)msg+{key}) = random_from_array((NSMutableArray*)@{enums});\n"
+            if value_subtype == "fix":
+                fix_value = value["value"]
+                fields_info_template += f"    *({size_type}*)((char*)msg+{key}) = {fix_value};\n"
 
         elif value_type == "float":
-            fields_info_template += f"    *(float*)((char*)msg+{
-                key}) = randomFloat();\n"
+            fields_info_template += f"    *(float*)((char*)msg+{key}) = randomFloat();\n"
         elif value_type == "id":
             value_subtype = value["subtype"]
-            fields_info_template += f"    *({size_type}*)((char*)msg+{key}) = random{
-                value_subtype}ID();\n"
+            fields_info_template += f"    *({size_type}*)((char*)msg+{key}) = random{value_subtype}();\n"
+        elif value_type == "bool":
+            fields_info_template += f"    *({size_type}*)((char*)msg+{key}) = randomBool();\n"
+        elif value_type == "buf":
+            fields_info_template += f"    fill the buffer as you wish\n"
+        elif value_type == "oolsize":
+            value_subtype = value["subtype"]
+            fields_info_template += f"    *({size_type}*)((char*)msg+{key}) = {value_subtype}\n"
 
     return fields_info_template
 
@@ -64,13 +84,11 @@ def build_fields(fields_info):
 def build_complicated_msg(descriptorCount, descriptors):
     code_template = ""
     code_template += "    msg->msgh_bits |= MACH_MSGH_BITS_COMPLEX;\n"
-    code_template += f"    *(uint32_t*)((char*)msg+0x18) = {
-        descriptorCount};\n"
+    code_template += f"    *(uint32_t*)((char*)msg+0x18) = {descriptorCount};\n"
     cur_loc = 0x1c
     for descriptor in descriptors:
         if descriptor == 'ool':
-            code_template += f"    prepareOOL_Descriptor((char*)msg+{
-                cur_loc}, buf, bufSize, MACH_MSG_VIRTUAL_COPY);\n"
+            code_template += f"    prepareOOL_Descriptor((char*)msg+{cur_loc}, buf, bufSize, MACH_MSG_VIRTUAL_COPY);\n"
             cur_loc += 0x10
         elif descriptor == 'port':
             code_template += "    mach_port_t port1 = MACH_PORT_NULL;\n"
@@ -79,13 +97,12 @@ def build_complicated_msg(descriptorCount, descriptors):
             code_template += "        free(msg);\n"
             code_template += "        return kr;\n"
             code_template += "    }\n"
-            code_template += f"    preparePort_Descriptor((char*)msg+{
-                cur_loc}, port1, MACH_MSG_TYPE_MAKE_SEND);\n"
+            code_template += f"    preparePort_Descriptor((char*)msg+{cur_loc}, port1, MACH_MSG_TYPE_MAKE_SEND);\n"
             cur_loc += 0xc
     return code_template
 
 
-def build_code():
+def test_build_code():
     msgName = "test"
     msgID = 29200
     sendSize = 0x28

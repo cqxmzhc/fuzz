@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify, render_template
 import sqlite3
 from database import init_db  # 导入 init_db 函数
 import json
-from generatMsg import buildHeader, buildFooter, build_fields, build_complicated_msg
+from generatMsg import buildHeader, buildFooter, build_fields, build_complicated_msg, buildFunctionDefine, insertFunctionRoutine
 
 app = Flask(__name__)
 
@@ -99,26 +99,48 @@ def create_message():
     return jsonify(new_message), 201
 
 
-@app.route('/message/<int:id>', methods=['PUT'])
+# 根据message_name更新消息
+@app.route('/message/<string:id>', methods=['PUT'])
 def update_message(id):
-    updated_message = request.get_json()
-    message_name = updated_message['message_name']
-    message_type = updated_message['message_type']
-    key = updated_message['key']
-    data_type = updated_message['data_type']
-    min_val = updated_message.get('min')
-    max_val = updated_message.get('max')
-    value = updated_message.get('value')
+    new_message = request.get_json()
+    message_name = new_message['message_name']
+    descriptor = new_message.get('descriptor')
+    descriptor = json.dumps(descriptor)
+    message_bodies = new_message['message_bodies']
 
     conn = get_db_connection()
-    conn.execute('''
+    cursor = conn.cursor()
+
+    cursor.execute('''
         UPDATE messages
-        SET message_name = ?, message_type = ?, key = ?, data_type = ?, min = ?, max = ?, value = ?
-        WHERE id = ?
-    ''', (message_name, message_type, key, data_type, min_val, max_val, value, id))
+        SET descriptor = ?
+        WHERE message_name = ?
+    ''', (descriptor, message_name))
+
+    cursor.execute('''
+        DELETE FROM message_bodies
+        WHERE message_name = ?
+    ''', (message_name,))
+    for body in message_bodies:
+        key = body['key']
+        data_type = body['data_type']
+        min_val = body.get('min')
+        max_val = body.get('max')
+        value = body.get('value')
+        value_type = body.get('value_type')
+        length = body.get('length')
+
+        if value_type == 'enum':
+            value = json.dumps(value.split(','))
+
+        cursor.execute('''
+            INSERT INTO message_bodies (message_name, key, data_type, length, min, max, value,value_type)
+            VALUES (?, ?, ?, ?, ?, ?,?,?)
+        ''', (message_name, key, data_type, length, min_val, max_val, value, value_type))
+
     conn.commit()
     conn.close()
-    return jsonify(updated_message)
+    return jsonify(new_message), 200
 
 
 @app.route('/message/<string:id>', methods=['DELETE'])
@@ -131,12 +153,21 @@ def delete_message(id):
     return '', 204
 
 
-# 增加一个删除消息体的接口
 @app.route('/message_body/<string:name>/<string:key>', methods=['DELETE'])
 def delete_message_body(name, key):
     conn = get_db_connection()
     conn.execute(
         'DELETE FROM message_bodies WHERE message_name = ? AND key = ?', (name, key))
+    conn.commit()
+    conn.close()
+    return '', 204
+
+
+@app.route('/data_type/<string:data_type>', methods=['DELETE'])
+def delete_data_type(data_type):
+    conn = get_db_connection()
+    conn.execute(
+        'DELETE FROM data_types WHERE data_type = ?', (data_type,))
     conn.commit()
     conn.close()
     return '', 204
@@ -166,7 +197,17 @@ def add_data_type():
     conn.close()
     return '', 201
 
-# get value types
+# 删除value_type
+
+
+@app.route('/value_type/<string:value_type>', methods=['DELETE'])
+def delete_value_type(value_type):
+    conn = get_db_connection()
+    conn.execute(
+        'DELETE FROM value_types WHERE value_type = ?', (value_type,))
+    conn.commit()
+    conn.close()
+    return '', 204
 
 
 @app.route('/value_types', methods=['GET'])
@@ -208,12 +249,12 @@ def generate_code():
                 message_name = message['message_name']
                 message_id = message['message_id']
                 message_size = message['message_size']
-                descriptor = message.get('descriptor')
+                descriptor = message['descriptor']
                 if descriptor:
                     descriptor = json.loads(descriptor)
 
                 message_bodies = conn.execute(
-                    'SELECT key, data_type, length, min, max, value, value_type, FROM message_bodies WHERE message_name = ?',
+                    'SELECT key, data_type, length, min, max, value, value_type FROM message_bodies WHERE message_name = ?',
                     (message_name,)
                 ).fetchall()
                 bodies = [dict(body) for body in message_bodies]
@@ -240,15 +281,21 @@ def generate_code():
                     if value_type == "enum":
                         fields_info[key]["enums"] = json.loads(value)
 
-                descriptorCount = len(descriptor)
+                function_define = buildFunctionDefine([message_name])
+                function_routine = insertFunctionRoutine([message_name])
+
+                complicated_msg = ''
+                if descriptor:
+                    descriptorCount = len(descriptor)
+                    complicated_msg = build_complicated_msg(
+                        descriptorCount, descriptor)
 
                 header = buildHeader(message_name, message_id, message_size)
                 fields_info_str = build_fields(fields_info)
-                complicated_msg = build_complicated_msg(
-                    descriptorCount, descriptor)
                 footer = buildFooter()
 
-                code = header + fields_info_str + complicated_msg + footer
+                code = function_define+function_routine + header + \
+                    complicated_msg + fields_info_str + footer
                 code_list.append(code)
 
             return jsonify(code_list)

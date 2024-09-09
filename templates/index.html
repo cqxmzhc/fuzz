@@ -105,7 +105,15 @@
     </style>
     <script>
         function addDropdown() {
+            // const descriptorContainer = document.createElement('div');
+            // descriptorContainer.className = 'form-row';
+
+            const descriptorContainer = document.getElementById('descriptor-form-row');
+
             const addDropdownBtn = document.getElementById('add-dropdown-btn');
+            const newDropdownContainer = document.createElement('div');
+            newDropdownContainer.className = 'form-group col';
+
             const newDropdown = document.createElement('select');
             newDropdown.name = 'descriptor';
             newDropdown.className = 'descriptor';
@@ -114,7 +122,21 @@
                 <option value="port">port</option>
                 <option value="ool">ool</option>
             `;
-            addDropdownBtn.parentNode.insertBefore(newDropdown, addDropdownBtn);
+
+            
+            const deleteButton = document.createElement('button');
+            deleteButton.type = 'button';
+            deleteButton.className = 'btn btn-danger ml-2';
+            deleteButton.textContent = '删除';
+            deleteButton.onclick = () => {
+                newDropdownContainer.remove();
+            };
+
+            newDropdownContainer.appendChild(newDropdown);
+            newDropdownContainer.appendChild(deleteButton);
+            descriptorContainer.appendChild(newDropdownContainer);
+
+            addDropdownBtn.parentNode.insertBefore(descriptorContainer, addDropdownBtn);
 }
         function switchTab(event, tabId) {
             const tabs = document.querySelectorAll('.tab');
@@ -129,21 +151,37 @@
             if (tabId === 'message-list-tab') {
                 fetchMessages();
             }
+
+            if (tabId === 'type-list-tab') {
+                fetchTypes();
+            }
+
+            if (tabId === 'simple-message-tab') {
+                fetchDataTypeOptions();
+                fetchValueTypes();
+            }
+
+            if (tabId === 'complex-message-tab') {
+                fetchDataTypeOptions();
+                fetchValueTypes();
+            }
+
         }
 
         function handleDataTypeChange(evnet){
             data_type = event.target.value;
             if (data_type === 'new'){
-                addDataType();
+                addDataType(evnet.target);
             }
         }
 
         function handleComplexValueTypeChange(event) {
-            const valueType = event.target.value;
+            const valueType = event.target.value.toLowerCase();
             const minField = event.target.closest('.complex-message-body').querySelector('.min-field');
             const maxField = event.target.closest('.complex-message-body').querySelector('.max-field');
             const valueField = event.target.closest('.complex-message-body').querySelector('.value-field');
 
+            console.log(valueType);
             if (valueType === 'range') {
                 minField.style.display = 'block';
                 maxField.style.display = 'block';
@@ -153,7 +191,8 @@
                 maxField.style.display = 'none';
                 valueField.style.display = 'block';
             } else if (valueType === 'new') {
-                addDataType();
+                // 把当前select元素传入
+                addValueType(event.target);
             } else {
                 minField.style.display = 'none';
                 maxField.style.display = 'none';
@@ -162,7 +201,7 @@
         }
 
         function handleValueTypeChange(event) {
-            const valueType = event.target.value;
+            const valueType = event.target.value.toLowerCase();
             const minField = event.target.closest('.message-body').querySelector('.min-field');
             const maxField = event.target.closest('.message-body').querySelector('.max-field');
             const valueField = event.target.closest('.message-body').querySelector('.value-field');
@@ -176,7 +215,7 @@
                 maxField.style.display = 'none';
                 valueField.style.display = 'block';
             } else if (valueType === 'new') {
-                addValueType();
+                addValueType(event.target);
             } else if (valueType === 'Window') {
                 minField.style.display = 'none';
                 maxField.style.display = 'none';
@@ -196,23 +235,25 @@
                     const valueTypeSelects = document.getElementsByName("value_type");
         
                     valueTypeSelects.forEach(valueTypeSelect => {
-                        valueTypeSelect.innerHTML = ''; // 清空现有选项
-        
+                        const existingOptions = Array.from(valueTypeSelect.options).map(option => option.value);
+
                         data.forEach(type => {
-                            const option = document.createElement('option');
-                            option.value = type;
-                            option.textContent = type;
-                            valueTypeSelect.appendChild(option);
+                            if (!existingOptions.includes(type)) {
+                                const option = document.createElement('option');
+                                option.value = type;
+                                option.textContent = type;
+                                if (type.toLowerCase() === 'range') {
+                                    option.selected = true;
+                                }
+                                valueTypeSelect.appendChild(option);
+                            }
                         });
 
-                        const newOption = document.createElement('option');
-                        newOption.value = 'new';
-                        newOption.textContent = '新建';
-                        valueTypeSelect.appendChild(newOption);
-
-                        // 设置默认选项
-                        if (data.length > 0) {
-                            valueTypeSelect.value = data[0]; // 设置第一个选项为默认选项
+                        if (!existingOptions.includes('new')) {
+                            const newOption = document.createElement('option');
+                            newOption.value = 'new';
+                            newOption.textContent = '新建';
+                            valueTypeSelect.appendChild(newOption);
                         }
 
                         // 增加change事件监听
@@ -232,23 +273,23 @@
                     const dataTypeSelects = document.getElementsByName("data_type");
         
                     dataTypeSelects.forEach(dataTypeSelect => {
-                        dataTypeSelect.innerHTML = ''; // 清空现有选项
+                        const existingOptions = Array.from(dataTypeSelect.options).map(option => option.value);
         
                         data.forEach(type => {
-                            const option = document.createElement('option');
-                            option.value = type;
-                            option.textContent = type;
-                            dataTypeSelect.appendChild(option);
+                            if (!existingOptions.includes(type)) {
+                                const option = document.createElement('option');
+                                option.value = type;
+                                option.textContent = type;
+                                dataTypeSelect.appendChild(option);
+                            }
                         });
 
-                        const newOption = document.createElement('option');
-                        newOption.value = 'new';
-                        newOption.textContent = '新建';
-                        dataTypeSelect.appendChild(newOption);
 
-                        // 设置默认选项
-                        if (data.length > 0) {
-                            dataTypeSelect.value = data[0]; // 设置第一个选项为默认选项
+                        if (!existingOptions.includes('new')) {
+                            const newOption = document.createElement('option');
+                            newOption.value = 'new';
+                            newOption.textContent = '新建';
+                            dataTypeSelect.appendChild(newOption);
                         }
 
                         // 增加change事件监听
@@ -260,6 +301,68 @@
                 });
         }
 
+        function updateMessage(messageName) {
+            const messageContainers = document.querySelectorAll('.message-container h3');
+            let messageContainer = null;
+
+            messageContainers.forEach(container => {
+                // 解析出message_name并判断是否与传入的messageName相同
+                const name = container.textContent.split(',')[0].split(':')[1].trim();
+                if (name === messageName) {
+                    messageContainer = container.parentElement;
+                }
+            });
+            if (!messageContainer) {
+                alert('未找到消息');
+                return;
+            }
+
+            // 获取descriptor
+            const descriptorContainer = messageContainer.querySelector('.form-row');
+            const descriptors = descriptorContainer.querySelectorAll('.descriptor');
+            const descriptorValues = [];
+            descriptors.forEach(descriptor => {
+                descriptorValues.push(descriptor.value);
+            });
+
+            let message_bodies = [];
+            const messageBodies = messageContainer.querySelectorAll('.message-body');
+            const bodies =  messageBodies.forEach(body => {
+                const bodyData = {
+                    key: body.querySelector('[name="key"]').value,
+                    data_type: body.querySelector('[name="data_type"]').value,
+                    min: body.querySelector('[name="min"]').value,
+                    max: body.querySelector('[name="max"]').value,
+                    value: body.querySelector('[name="value"]').value,
+                    value_type: body.querySelector('[name="value_type"]').value,
+                    length: body.querySelector('[name="data_size"]').value
+                };
+            message_bodies.push(bodyData);
+            });
+
+            const updatedMessage = {
+                message_name: messageName,
+                descriptor: descriptorValues,
+                message_bodies: message_bodies
+            };
+
+            fetch(`/message/${messageName}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedMessage)
+            })
+            .then(response => {
+                if (response.ok) {
+                    fetchMessages();
+                } else {
+                    alert('更新消息失败');
+                }
+            });
+        }
+
+
         function fetchMessages() {
             fetch('/messages')
         .then(response => response.json())
@@ -270,9 +373,17 @@
                 const messageContainer = document.createElement('div');
                 messageContainer.classList.add('message-container');
 
+
                 const messageHeader = document.createElement('h3');
                 messageHeader.textContent = `Message Name: ${message.message_name}, Message ID: ${message.message_id} Send Size: ${message.message_size} Type: ${message.message_type}`;
                 messageContainer.appendChild(messageHeader);
+
+                const updateButton = document.createElement('button');
+                updateButton.textContent = '更新';
+                updateButton.onclick = () => {
+                    updateMessage(message.message_name);
+                }
+                messageContainer.appendChild(updateButton);
 
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = '删除';
@@ -280,6 +391,42 @@
                     deleteMessage(message.message_name, messageContainer);
                 }
                 messageContainer.appendChild(deleteButton);
+
+                // 新增一个按钮，新增dscriptor
+                const addDescriptorButton = document.createElement('button');
+                addDescriptorButton.textContent = '新增descriptor';
+                const descriptorContainer = document.createElement('div');
+                descriptorContainer.className = 'form-row';
+                addDescriptorButton.onclick = () => {
+                    const newDropdownContainer = document.createElement('div');
+                    newDropdownContainer.className = 'form-group col';
+
+                    const newDropdown = document.createElement('select');
+                    newDropdown.name = 'descriptor';
+                    newDropdown.className = 'descriptor';
+                    newDropdown.required = true;
+                    newDropdown.innerHTML = `
+                    <option value="ool" 'selected'}>ool</option>
+                    <option value="port">port</option>
+                `;
+                    const deleteButton = document.createElement('button');
+                    deleteButton.type = 'button';
+                    deleteButton.className = 'btn btn-danger';
+                    deleteButton.textContent = '删除';
+                    deleteButton.onclick = () => {
+                        newDropdownContainer.remove();
+                    };
+
+                    newDropdownContainer.appendChild(newDropdown);
+                    newDropdownContainer.appendChild(deleteButton);
+                    descriptorContainer.appendChild(newDropdownContainer);
+
+                    // 放在当前按钮之后
+                    messageContainer.insertBefore(descriptorContainer, addDescriptorButton.nextSibling);
+
+                };
+
+                messageContainer.appendChild(addDescriptorButton);
 
                 if (message.descriptor) {
                     const descriptorContainer = document.createElement('div');
@@ -294,10 +441,19 @@
                         newDropdown.className = 'descriptor';
                         newDropdown.required = true;
                         newDropdown.innerHTML = `
-                            <option value="${descriptor}">${descriptor}</option>
-                        `;
+                        <option value="ool" ${descriptor === 'ool' ? 'selected' : ''}>ool</option>
+                        <option value="port" ${descriptor === 'port' ? 'selected' : ''}>port</option>
+                    `;
+                        const deleteButton = document.createElement('button');
+                        deleteButton.type = 'button';
+                        deleteButton.className = 'btn btn-danger';
+                        deleteButton.textContent = '删除';
+                        deleteButton.onclick = () => {
+                            newDropdownContainer.remove();
+                        };
 
                         newDropdownContainer.appendChild(newDropdown);
+                        newDropdownContainer.appendChild(deleteButton);
                         descriptorContainer.appendChild(newDropdownContainer);
                     });
 
@@ -311,39 +467,58 @@
 
 
                     newMessageBody.querySelector('[name="key"]').value = body.key;
-                    // newMessageBody.querySelector('[name="data_type"]').value = body.data_type;
 
                     const dataTypeSelect = newMessageBody.querySelector('[name="data_type"]');
-                    const newOption = document.createElement('option');
-                    newOption.value = body.data_type;
-                    newOption.textContent = body.data_type;
-                    dataTypeSelect.appendChild(newOption);
+                    fetch('/data_types')
+                        .then(response => response.json())
+                            .then(data => {
+                                data.forEach(type => {
+                                    const option = document.createElement('option');
+                                    option.value = type;
+                                    option.textContent = type;
+                                    if (type === body.data_type) {
+                                        option.selected = true;
+                                    }
+                                    dataTypeSelect.appendChild(option);
+                                });
+                        });
 
                     const valueTypeSelect = newMessageBody.querySelector('[name="value_type"]');
-                    const newOption1 = document.createElement('option');
-                    newOption1.value = body.value_type;
-                    newOption1.textContent = body.value_type;
-                    valueTypeSelect.innerHTML = ''
-                    valueTypeSelect.appendChild(newOption1);
+                    fetch('/value_types')
+                        .then(response => response.json())
+                            .then(data => {
+                                data.forEach(type => {
+                                    const option = document.createElement('option');
+                                    option.value = type;
+                                    option.textContent = type;
+                                    if (type === body.value_type) {
+                                        option.selected = true;
+                                    }
+                                    valueTypeSelect.appendChild(option);
+                                });
+                        });
 
                     const dataSizeTypeSelect = newMessageBody.querySelector('[name="data_size"]');
-                    const dataSizeOption = document.createElement('option');
-                    dataSizeOption.value = body.length;
-                    dataSizeOption.textContent = body.length;
-                    dataSizeTypeSelect.innerHTML = ''
-                    dataSizeTypeSelect.appendChild(dataSizeOption);
+                    console.log(body.length);
+                    dataSizeTypeSelect.innerHTML = `
+                    <option value="1" ${body.length === 1 ? 'selected' : ''}>1</option>
+                    <option value="2" ${body.length === 2 ? 'selected' : ''}>2</option>
+                    <option value="4" ${body.length === 4 ? 'selected' : ''}>4</option>
+                    <option value="8" ${body.length === 8 ? 'selected' : ''}>8</option>
+                    `
+                    // dataSizeTypeSelect.appendChild(dataSizeOption);
 
                     const minField = newMessageBody.querySelector('.min-field');
                     const maxField = newMessageBody.querySelector('.max-field');
                     const valueField = newMessageBody.querySelector('.value-field');
 
-                    if (body.value_type === 'range') {
+                    if (body.value_type.toLowerCase() === 'range') {
                         minField.style.display = 'block';
                         maxField.style.display = 'block';
                         valueField.style.display = 'none';
                         newMessageBody.querySelector('[name="min"]').value = body.min || '';
                         newMessageBody.querySelector('[name="max"]').value = body.max || '';
-                    } else if (body.value_type === 'Window') {
+                    } else if (body.value_type.toLowerCase() === 'window') {
                         minField.style.display = 'none';
                         maxField.style.display = 'none';
                         valueField.style.display = 'none';
@@ -365,7 +540,6 @@
             });
         });
         }
-
 
         function deleteMessage(id, messageContainer) {
             fetch(`/message/${id}`, {
@@ -485,55 +659,138 @@
             fetchValueTypes();
         }
 
-        function addDataType() {
-            const newDataType = prompt('请输入新的type:');
-            if (newDataType) {
-                fetch('/data_type', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ data_type: newDataType })
-                })
-                .then(response => {
-                    if (response.ok) {
-                        const dataTypeSelects = document.querySelectorAll('[name="data_type"]');
-                        dataTypeSelects.forEach(select => {
+        function addDataType(selectElement) {
+            if (selectElement) {
+                const dataType = prompt('请输入新的type:');
+                if (dataType) {
+                    fetch('/data_type', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ data_type: dataType })
+                    })
+                    .then(response => {
+                        if (response.ok) {
                             const option = document.createElement('option');
-                            option.value = newDataType;
-                            option.textContent = newDataType;
-                            select.insertBefore(option, select.querySelector('option[value="new"]'));
-                        });
-                    } else {
-                        alert('Failed to add new type');
-                    }
-                });
+                            option.value = dataType;
+                            option.textContent = dataType;
+                            option.selected = true;
+                            selectElement.insertBefore(option, selectElement.querySelector('option[value="new"]'));
+                            fetchDataTypeOptions();
+                        } else {
+                            alert('Failed to add new type');
+                        }
+                    });
+                }
+            } else {
+                const dataType = prompt('请输入新的type:');
+                if (dataType) {
+                    fetch('/data_type', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ data_type: dataType })
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            const dataTypeSelects = document.querySelectorAll('[name="data_type"]');
+                            dataTypeSelects.forEach(select => {
+                                const option = document.createElement('option');
+                                option.value = dataType;
+                                option.textContent = dataType;
+                                // option.selected = true;
+                                select.insertBefore(option, select.querySelector('option[value="new"]'));
+                            });
+
+                            fetchTypes();
+                        } else {
+                            alert('Failed to add new type');
+                        }
+                    });
+                }
             }
+            // const newDataType = prompt('请输入新的type:');
+            // if (newDataType) {
+            //     fetch('/data_type', {
+            //         method: 'POST',
+            //         headers: {
+            //             'Content-Type': 'application/json'
+            //         },
+            //         body: JSON.stringify({ data_type: newDataType })
+            //     })
+            //     .then(response => {
+            //         if (response.ok) {
+            //             const dataTypeSelects = document.querySelectorAll('[name="data_type"]');
+            //             dataTypeSelects.forEach(select => {
+            //                 const option = document.createElement('option');
+            //                 option.value = newDataType;
+            //                 option.textContent = newDataType;
+            //                 option.selected = true;
+            //                 select.insertBefore(option, select.querySelector('option[value="new"]'));
+            //             });
+
+            //             fetchTypes();
+            //         } else {
+            //             alert('Failed to add new type');
+            //         }
+            //     });
+            // }
         }
 
-        function addValueType() {
-            const newValueType = prompt('请输入新的subtype:');
-            if (newValueType) {
-                fetch('/value_type', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ value_type: newValueType })
-                })
-                .then(response => {
-                    if (response.ok) {
-                        const valueTypeSelects = document.querySelectorAll('.value-type');
-                        valueTypeSelects.forEach(select => {
+        // 新增value type
+        function addValueType(selectElement) {
+            if (selectElement) {
+                const valueType = prompt('请输入新的subtype:');
+                if (valueType) {
+                    fetch('/value_type', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ value_type: valueType })
+                    })
+                    .then(response => {
+                        if (response.ok) {
                             const option = document.createElement('option');
-                            option.value = newValueType;
-                            option.textContent = newValueType;
-                            select.insertBefore(option, select.querySelector('option[value="new"]'));
-                        });
-                    } else {
-                        alert('Failed to add new subtype');
-                    }
-                });
+                            option.value = valueType;
+                            option.textContent = valueType;
+                            option.selected = true;
+                            selectElement.insertBefore(option, selectElement.querySelector('option[value="new"]'));
+                            fetchValueTypes();
+                        } else {
+                            alert('Failed to add new value type');
+                        }
+                    });
+                }
+            } else {
+                const valueType = prompt('请输入新的subtype:');
+                if (valueType) {
+                    fetch('/value_type', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ value_type: valueType })
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            const valueTypeSelects = document.querySelectorAll('[name="value_type"]');
+                            valueTypeSelects.forEach(select => {
+                                const option = document.createElement('option');
+                                option.value = valueType;
+                                option.textContent = valueType;
+                                // option.selected = true;
+                                select.insertBefore(option, select.querySelector('option[value="new"]'));
+                            });
+
+                            fetchTypes();
+                        } else {
+                            alert('Failed to add new value type');
+                        }
+                    });
+                }
             }
         }
 
@@ -562,6 +819,106 @@
             }
         }
 
+        function exportCode() {
+            fetch('/generate_code')
+                .then(response => response.json())
+                .then(codeList => {
+                    const blob = new Blob([codeList.join('\n')], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'generated_code.c';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // 删除选项
+        function deleteOption(value) {
+            // 调用接口删除对应的值
+            fetch(`/value_type/${value}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 从选项数组中删除
+                        const index = options.findIndex(option => option.value === value);
+                        if (index !== -1) {
+                            options.splice(index, 1);
+                            fetchValueTypes(); // 重新获取数据类型选项
+                        }
+                    } else {
+                        console.error('删除失败:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('删除请求失败:', error);
+                });
+        }
+
+        function deleteDataType(dataType) {
+            fetch(`/data_type/${dataType}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    fetchTypes()
+                } else {
+                    alert('Failed to delete data type');
+                }
+            });
+        }
+
+        function deleteValueType(valueType) {
+            fetch(`/value_type/${valueType}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    fetchTypes();
+                } else {
+                    alert('Failed to delete value type');
+                }
+            });
+        }
+
+
+        function fetchTypes() {
+            fetch('/data_types')
+                .then(response => response.json())
+                .then(dataTypes => {
+                    const dataTypeList = document.getElementById('data-type-list');
+                    dataTypeList.innerHTML = '';
+                    dataTypes.forEach(type => {
+                        const li = document.createElement('li');
+                        li.textContent = type;
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = '删除';
+                        deleteButton.onclick = () => deleteDataType(type);
+                        li.appendChild(deleteButton);
+                        dataTypeList.appendChild(li);
+                    });
+                });
+
+            fetch('/value_types')
+                .then(response => response.json())
+                .then(valueTypes => {
+                    const valueTypeList = document.getElementById('value-type-list');
+                    valueTypeList.innerHTML = '';
+                    valueTypes.forEach(type => {
+                        const li = document.createElement('li');
+                        li.textContent = type;
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = '删除';
+                        deleteButton.onclick = () => deleteValueType(type);
+                        li.appendChild(deleteButton);
+                        valueTypeList.appendChild(li);
+                    });
+                });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('default-tab').click();
             document.querySelectorAll('.value-type').forEach(select => select.addEventListener('change', handleValueTypeChange));
@@ -583,6 +940,7 @@
             <div class="tab" id="default-tab" onclick="switchTab(event, 'simple-message-tab')">简单消息类型</div>
             <div class="tab" onclick="switchTab(event, 'complex-message-tab')">复杂消息类型</div>
             <div class="tab" onclick="switchTab(event, 'message-list-tab')">消息列表</div>
+            <div class="tab" onclick="switchTab(event, 'type-list-tab')">类型管理</div>
         </div>
         <div id="simple-message-tab" class="tab-content">
             <h1>Messages</h1>
@@ -609,7 +967,7 @@
                     </div>
                 </div>
                 <div id="message-bodies">
-                    <div class="message-body">
+                    <!-- <div class="message-body">
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="key">Key</label>
@@ -629,12 +987,9 @@
                                 <select name="data_type" required>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="value-type-container">
                                 <label for="value_type">subtype</label>
                                 <select name="value_type" class="value-type" required>
-                                    <option value="range">Range</option>
-                                    <option value="fix">Fix</option>
-                                    <option value="new">新建</option>
                                 </select>
                             </div>
                             <div class="form-group min-field">
@@ -650,7 +1005,7 @@
                                 <input type="" name="value">
                             </div>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
                 <div class="form-group">
                     <button type="button" onclick="addSimpleMessageBody()">Add Message Body</button>
@@ -687,6 +1042,7 @@
                 </div>
                 <div id="complex-message-bodies">
                     <div class="complex-message-body">
+                        <div class="form-row" id="descriptor-form-row"></div>
                         <button type="button" id="add-dropdown-btn" onclick="addDropdown()">新增descriptor</button>
                         <div class="form-row">
                             <div class="form-group">
@@ -707,12 +1063,9 @@
                                 <select name="data_type" required>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="value-type-container">
                                 <label for="value_type">subtype</label>
                                 <select name="value_type" class="complex-value-type" required>
-                                    <option value="range">Range</option>
-                                    <option value="fix">Fix</option>
-                                    <option value="new">新建</option>
                                 </select>
                             </div>
                             <div class="form-group min-field">
@@ -741,8 +1094,19 @@
         </div>
         <div id="message-list-tab" class="tab-content">
             <h2>Message List</h2>
+            <button id="export-button" onclick="exportCode()">导出代码</button>
             <ul id="message-list"></ul>
         </div>
+        <div id="type-list-tab" class="tab-content">
+            <h2>Types</h2>
+            <ul id="data-type-list"></ul>
+            <button onclick="addDataType()">新增 Type</button>
+    
+            <h2>SubTypes</h2>
+            <ul id="value-type-list"></ul>
+            <button onclick="addValueType()">新增 SubType</button>
+        </div>
+    
     </div>
 
     <!-- 模板 -->
@@ -767,12 +1131,9 @@
                     <select name="data_type" required>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="value-type-container">
                     <label for="value_type">subtype</label>
                     <select name="value_type" class="value-type" required>
-                        <option value="range">Range</option>
-                        <option value="fix">Fix</option>
-                        <option value="new">新建</option>
                     </select>
                 </div>
                 <div class="form-group min-field">
@@ -814,12 +1175,9 @@
                     <select name="data_type" required>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="value-type-container">
                     <label for="value_type">subtype</label>
                     <select name="value_type" class="value-type" required>
-                        <option value="range">Range</option>
-                        <option value="fix">Fix</option>
-                        <option value="new">新建</option>
                     </select>
                 </div>
                 <div class="form-group min-field">
