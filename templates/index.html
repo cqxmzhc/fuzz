@@ -609,8 +609,8 @@
             });
             data.descriptor = values;
 
-            const messageBodies = document.querySelectorAll('.complex-message-body');
-            messageBodies.forEach(body => {
+            const messageBodies = Array.from(document.querySelectorAll('.complex-message-body'));
+            messageBodies.slice(1).forEach(body => {
                 const bodyData = {
                     key: body.querySelector('[name="key"]').value,
                     data_type: body.querySelector('[name="data_type"]').value,
@@ -642,21 +642,56 @@
         }
 
         function addComplexMessageBody() {
-            const messageBodyTemplate = document.getElementById('complex-message-body-template');
-            const newMessageBody = messageBodyTemplate.content.cloneNode(true);
-            document.getElementById('complex-message-bodies').appendChild(newMessageBody);
-            document.querySelectorAll('.complex-message-body .value-type').forEach(select => select.addEventListener('change', handleComplexValueTypeChange));
-            fetchDataTypeOptions(); // 添加新的消息体时重新获取数据类型选项
-            fetchValueTypes(); // 添加新的消息体时重新获取数据类型选项
+            const messageBodies = document.getElementById('complex-message-bodies');
+            console.log(messageBodies.children.length);
+            if (messageBodies.children.length === 1) {
+                const messageBodyTemplate = document.getElementById('complex-message-body-template');
+                const newMessageBody = messageBodyTemplate.content.cloneNode(true);
+                document.getElementById('complex-message-bodies').appendChild(newMessageBody);
+                document.querySelectorAll('.complex-message-body .value-type').forEach(select => select.addEventListener('change', handleComplexValueTypeChange));
+                fetchDataTypeOptions(); // 添加新的消息体时重新获取数据类型选项
+                fetchValueTypes(); // 添加新的消息体时重新获取数据类型选项
+            } else {
+                const lastMessageBody = messageBodies.lastElementChild;
+                const newMessageBody = lastMessageBody.cloneNode(true);
+                newMessageBody.querySelector('[name="data_size"]').value = lastMessageBody.querySelector('[name="data_size"]').value;
+                key = parseInt(lastMessageBody.querySelector('[name="key"]').value, 16);
+                if (!isNaN(key)) {
+                    length = parseInt(newMessageBody.querySelector('[name="data_size"]').value);
+                    console.log(key, length)
+                    newMessageBody.querySelector('[name="key"]').value = '0x'+(key + length).toString(16);
+                }
+                newMessageBody.querySelector('[name="data_type"]').value = lastMessageBody.querySelector('[name="data_type"]').value;
+                newMessageBody.querySelector('[name="value_type"]').value = lastMessageBody.querySelector('[name="value_type"]').value;
+                newMessageBody.querySelector('.value-type').addEventListener('change', handleComplexValueTypeChange);
+                messageBodies.appendChild(newMessageBody);
+            }
         }
 
         function addSimpleMessageBody() {
-            const messageBodyTemplate = document.getElementById('message-body-template');
-            const newMessageBody = messageBodyTemplate.content.cloneNode(true);
-            document.getElementById('message-bodies').appendChild(newMessageBody);
-            document.querySelectorAll('.message-body .value-type').forEach(select => select.addEventListener('change', handleValueTypeChange));
-            fetchDataTypeOptions(); // 添加新的消息体时重新获取数据类型选项
-            fetchValueTypes();
+            const messageBodies = document.getElementById('message-bodies');
+            if (messageBodies.children.length === 0) {
+                const messageBodyTemplate = document.getElementById('message-body-template');
+                const newMessageBody = messageBodyTemplate.content.cloneNode(true);
+                document.getElementById('message-bodies').appendChild(newMessageBody);
+                document.querySelectorAll('.message-body .value-type').forEach(select => select.addEventListener('change', handleValueTypeChange));
+                fetchDataTypeOptions(); // 添加新的消息体时重新获取数据类型选项
+                fetchValueTypes();
+            } else {
+                const lastMessageBody = messageBodies.lastElementChild;
+                const newMessageBody = lastMessageBody.cloneNode(true);
+                newMessageBody.querySelector('[name="data_size"]').value = lastMessageBody.querySelector('[name="data_size"]').value;
+                key = parseInt(lastMessageBody.querySelector('[name="key"]').value, 16);
+                if (!isNaN(key)) {
+                    length = parseInt(newMessageBody.querySelector('[name="data_size"]').value);
+                    console.log(key, length)
+                    newMessageBody.querySelector('[name="key"]').value = '0x'+(key + length).toString(16);
+                }
+                newMessageBody.querySelector('[name="data_type"]').value = lastMessageBody.querySelector('[name="data_type"]').value;
+                newMessageBody.querySelector('[name="value_type"]').value = lastMessageBody.querySelector('[name="value_type"]').value;
+                newMessageBody.querySelector('.value-type').addEventListener('change', handleValueTypeChange);
+                messageBodies.appendChild(newMessageBody);
+            }
         }
 
         function addDataType(selectElement) {
@@ -1047,7 +1082,7 @@
                     <div class="complex-message-body">
                         <div class="form-row" id="descriptor-form-row"></div>
                         <button type="button" id="add-dropdown-btn" onclick="addDropdown()">新增descriptor</button>
-                        <div class="form-row">
+                        <!-- <div class="form-row">
                             <div class="form-group">
                                 <label for="key">Key</label>
                                 <input type="text" name="key" required>
@@ -1084,7 +1119,7 @@
                                 <input type="" name="value">
                             </div>
 
-                        </div>
+                        </div> -->
                     </div>
                 </div>
                 <div class="form-group">
